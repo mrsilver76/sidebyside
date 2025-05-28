@@ -2,6 +2,9 @@
 _A cross-platform command-line tool (Windows, Linux, macOS) for combining two portrait photos into a single landscape image. This is useful for digital photo frames that display vertical images awkwardly._
 
 ## 🖼️ Framing the Problem
+
+![screenshot](https://github.com/mrsilver76/sidebyside/blob/main/frames.jpg?raw=true)
+
 Many digital photo frames are designed with landscape orientation in mind.
 
 When they encounter portrait images, they often resort to awkward workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo: either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about presentation, this default behaviour can feel unsatisfying and unpolished.
