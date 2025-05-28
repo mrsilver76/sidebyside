@@ -1,7 +1,7 @@
 # SideBySide
 _A cross-platform command-line tool (Windows, Linux, macOS) for combining two portrait photos into a single landscape image. This is useful for digital photo frames that display vertical images awkwardly._
 
-## 🖼️ Framing the Problem
+## 🖼️ Framing the problem
 
 Many digital photo frames are designed with landscape orientation in mind.
 
@@ -16,7 +16,7 @@ The result is a photo frame that feels curated - not cluttered or compromised.
 ## 🧰 Features
 * 💻 Runs on Windows, Linux (x64 & ARM) and macOS (Intel & Apple Silicon).
 * 🖼️ Combines two portrait `.jpg` images into one seamless landscape `.jpg`.
-* ➖ Adds an optional separator between images to enhance visual separation.
+* ➖ Adds an optional divider to enhance visual separation between images.
 * 🎯 Automatically centers each photo within a black background.
 * 📐 Resizes output to optimally fit digital photo frame displays.
 * 🔐 Creates uniquely named files to prevent duplicates and maintain consistency.
@@ -32,12 +32,14 @@ Each release includes the following files (`x.x.x` denotes the version number):
 |Filename|Description|
 |:--------|:-----------|
 |`SideBySide-x.x.x-win-x64.exe`|✅ For Microsoft Windows 10 and 11 ⬅️ **Most users should choose this**
-|`SideBySide-x.x.x-linux-x64`|For Linux on Intel/AMD CPUs|
-|`SideBySide-x.x.x-linux-arm64`|For Linux on ARM (e.g. Raspberry Pi)|
-|`SideBySide-x.x.x-osx-arm64`|For macOS on Apple Silicon (eg. M1 and newer)|
-|`SideBySide-x.x.x-osx-x64`|For macOS on Intel-based Macs (pre-Apple Silicon)|
+|`SideBySide-x.x.x-linux-x64.zip`|For Linux on Intel/AMD CPUs|
+|`SideBySide-x.x.x-linux-arm64.zip`|For Linux on ARM (e.g. Raspberry Pi)|
+|`SideBySide-x.x.x-osx-arm64.zip`|For macOS on Apple Silicon (eg. M1 and newer)|
+|`SideBySide-x.x.x-osx-x64.zip`|For macOS on Intel-based Macs (pre-Apple Silicon)|
 |Source code (zip)|ZIP archive of the source code|
 |Source code (tar.gz)|TAR.GZ archive of the source code|
+
+NEED TO CHANGE INSTRUCTIONS HERE BECAUSE IT IS DIFFERENT FOR WINDOWS AND OTHER USERS.
 
 > [!TIP]
 > There is no installer. Just download the appropriate file and run it from the command line.
@@ -107,7 +109,7 @@ SideBySide <source dir> <destination dir> <output dimensions> <separator width> 
   Remove all generated images from the destination folder before processing begins. Only `.jpg` files with names starting with `sideby-` will be deleted.
 
 - **`-r`, `--random`**   
-  Randomize the order of input images instead of sorting by date taken/created.
+  Randomise the order of input images instead of sorting by date taken/created. When enabled, the output images will have their creation and modification timestamps set to the time of processing rather than preserving the originals.
 
 - **`/?`, `-h`, `--help`**  
   Displays the full help text with all available options, credits and the location of the log files.
