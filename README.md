@@ -39,15 +39,16 @@ Each release includes the following files (`x.x.x` denotes the version number):
 |Source code (zip)|ZIP archive of the source code|
 |Source code (tar.gz)|TAR.GZ archive of the source code|
 
-NEED TO CHANGE INSTRUCTIONS HERE BECAUSE IT IS DIFFERENT FOR WINDOWS AND OTHER USERS.
+### Windows users
+- Download the `.exe` file for your platform (e.g. `SideBySide-0.9.0-win-x64.exe`).
+- No installation or extraction is needed - just run it from the terminal with arguments.
 
-> [!TIP]
-> There is no installer. Just download the appropriate file and run it from the command line.
-
-### Linux/macOS users
-
-* You will need to install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime).
-* Don't forget to make the file executable: `chmod +x SideBySide-x.x.x-<your-platform>`
+### Linux and macOS users
+- Download the `.zip` file for your architecture (e.g. `SideBySide-0.9.0-linux-arm64.zip` or `SideBySide-0.9.0-osx-arm64.zip`) and extract it.
+- You will need to install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime).
+- Make the binary executable: `chmod +x SideBySide-0.9.0-<your-platform>`
+- Ensure that the extracted `.so` (Linux) or `.dylib` (macOS) file is in the same directory as the binary - this is required for the native ImageMagick bindings to work.
+- Run it from the terminal with your desired arguments.
 
 ### Platform testing notes
 
