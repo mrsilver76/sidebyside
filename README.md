@@ -1,6 +1,15 @@
 # SideBySide
 _A cross-platform command-line tool (Windows, Linux, macOS) for combining two portrait photos into a single landscape image. This is useful for digital photo frames that display vertical images awkwardly._
 
+## 🖼️ Framing the Problem
+Many digital photo frames are designed with landscape orientation in mind.
+
+When they encounter portrait images, they often resort to awkward workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo: either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about presentation, this default behaviour can feel unsatisfying and unpolished.
+
+SideBySide works around this problem by combining two portrait images into a single landscape composition. The pairing is automatic, the layout balanced and the final resolution tailored to your display. Because the output matches your frame’s aspect ratio exactly, each image appears larger and sharper - making better use of the available screen.
+
+The result is a photo frame that feels curated - not cluttered or compromised.
+
 ## 🧰 Features
 * 💻 Runs on Windows, Linux (x64 & ARM) and macOS (Intel & Apple Silicon).
 * 🖼️ Combines two portrait `.jpg` images into one seamless landscape `.jpg`.
@@ -122,6 +131,9 @@ Please raise an issue at https://github.com/mrsilver76/sidebyside/issues.
 ## 📝 Attribution
 - Frame icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/frame)
 - Image manipulation powered by ImageMagick - https://www.imagemagick.org
+- Photo: [Coconut Tree Near Body of Water Under Blue Sky](https://www.pexels.com/photo/coconut-tree-near-body-of-water-under-blue-sky-240526/) by Asad Photo Maldives
+- Photo: [Person Laying On Sand](https://www.pexels.com/photo/person-laying-on-sand-1770310/) by Rebeca Gonçalves
+- Photo: [Brown Wooden Panel](https://www.pexels.com/photo/brown-wooden-panel-347139/) by Tirachard Kumtanom
 
 ## 🕰️ Version history
 
