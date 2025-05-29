@@ -144,5 +144,5 @@ Please raise an issue at https://github.com/mrsilver76/sidebyside/issues.
 
 ## 🕰️ Version history
 
-### 0.9.0 (29 May 2025)
+### 0.9.0 (30 May 2025)
 - Initial version.
