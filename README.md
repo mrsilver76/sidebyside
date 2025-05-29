@@ -31,7 +31,7 @@ Each release includes the following files (`x.x.x` denotes the version number):
 
 |Filename|Description|
 |:--------|:-----------|
-|`SideBySide-x.x.x-win-x64.exe`|✅ For Microsoft Windows 10 and 11 ⬅️ **Most users should choose this**
+|`SideBySide-x.x.x-win-x64.zip`|✅ For Microsoft Windows 10 and 11 ⬅️ **Most users should choose this**
 |`SideBySide-x.x.x-linux-x64.zip`|For Linux on Intel/AMD CPUs|
 |`SideBySide-x.x.x-linux-arm64.zip`|For Linux on ARM (e.g. Raspberry Pi)|
 |`SideBySide-x.x.x-osx-arm64.zip`|For macOS on Apple Silicon (eg. M1 and newer)|
@@ -40,15 +40,16 @@ Each release includes the following files (`x.x.x` denotes the version number):
 |Source code (tar.gz)|TAR.GZ archive of the source code|
 
 ### Windows users
-- Download the `.exe` file for Windows (see the table above)
-- No installation or extraction is needed - just run it from the terminal with arguments.
-
+- Download the `.zip` file for Windows (see the table above) and extract it by right-clicking and selecting "Extract All.."
+- Ensure that the extracted `.dll` remains in the same directory as the binary - this is required for the native ImageMagick bindings to work.  
+- Open a Command Prompt in that folder and run the program with your desired arguments.
+ 
 ### Linux and macOS users
 - Download the `.zip` file for your architecture (see the table above) and extract it.
-- You will need to install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime).
+- Install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime) if it's not already available.
 - Make the binary executable: `chmod +x SideBySide-x.x.x-<your-platform>`
-- Ensure that the extracted `.so` (Linux) or `.dylib` (macOS) file is in the same directory as the binary - this is required for the native ImageMagick bindings to work.
-- Run it from the terminal with your desired arguments.
+- Ensure that the extracted `.so` (Linux) or `.dylib` (macOS) file remains in the same folder as the binary - this is required for the native ImageMagick bindings to work.
+- Open a terminal in that folder and run the program with your desired arguments.
 
 ### Platform testing notes
 
