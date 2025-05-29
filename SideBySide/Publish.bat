@@ -57,14 +57,30 @@ for %%r in (%RUNTIMES%) do (
 
     REM --- CLEANUP ---
     del *.pdb >nul 2>&1
+	
+	REM --- GET DLL LOCATION ---
+	set "DLL="
+	for %%f in (*.dll) do (
+		set "DLL=%%f"
+	)
 
-    REM --- RENAME OUTPUT ---
-    if exist "%BASENAME%.exe" (
-        move "%BASENAME%.exe" "..\%EXENAME%-%version%-%%r.exe"
-    ) else (
-        move "%BASENAME%" "..\%EXENAME%-%version%-%%r"
-    )
-
+	REM --- PACKAGE WINDOWS ---
+	if exist "%BASENAME%.exe" (
+		move "%BASENAME%.exe" "..\%EXENAME%-%version%-%%r.exe"
+		if /i "%%r"=="win-x64" (
+			if defined DLL (
+				copy /y "!DLL!" "..\!DLL!" >nul
+				pushd ..
+				powershell -Command "Compress-Archive -Path '%EXENAME%-%version%-%%r.exe','!DLL!' -DestinationPath '%EXENAME%-%version%-%%r.zip' -CompressionLevel Optimal -Force"
+				del "!DLL!" >nul
+				del "%EXENAME%-%version%-%%r.exe" >nul
+				popd
+			)
+		)
+	) else (
+		move "%BASENAME%" "..\%EXENAME%-%version%-%%r"
+	)
+	
 	REM --- PACKAGE NON-WINDOWS ---
 	if /i not "%%r"=="win-x64" (
 		for %%f in (*.so *.dylib) do (
