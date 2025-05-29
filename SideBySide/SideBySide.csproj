@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+	<!-- Assembly information -->
+	<ApplicationIcon>SideBySide.ico</ApplicationIcon>
+	<Authors>Richard Lawrence</Authors>
+	<Product>SideBySide</Product>
+	<Description>Combine two portrait photos into a single landscape image</Description>
+	<PackageProjectUrl>https://github.com/mrsilver76/sidebyside</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/mrsilver76/sidebyside</RepositoryUrl>
+	<Copyright>Copyright © 2024-2025 Richard Lawrence</Copyright>
+
+	  <!-- Version information -->
+	  <!-- Remember major.minor.BUILD.revision! -->
+	  <Version>0.9.0.0</Version>
+	  <AssemblyVersion>0.9.0.0</AssemblyVersion>
+	  <FileVersion>0.9.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ini-parser" Version="2.5.2" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.6.0" />
+  </ItemGroup>
+
+</Project>
