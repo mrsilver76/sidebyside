@@ -19,7 +19,10 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -27,6 +30,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using IniParser;
 using IniParser.Model;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using XmpCore.Options;
 using static SideBySide.Program;
 
 namespace SideBySide
@@ -42,85 +47,120 @@ namespace SideBySide
             if (args.Length == 0)
                 DisplayUsage();
 
-            // Loop through all arguments
+            
+            string? fileList = null;
+
             for (int i = 0; i < args.Length; i++)
             {
-                string arg = args[i].ToLower();
+                string arg = args[i];
 
                 if (arg == "/?" || arg == "--help" || arg == "-h")
-                {
                     DisplayUsage();
-                }
 
-                if (arg.StartsWith('-'))
+                if (arg.StartsWith("-"))
                 {
-                    if (arg == "-v" || arg == "--verbose")
-                        verboseMode = true;
-                    else if (arg == "-o" || arg == "--overwrite")
-                        overwriteExisting = true;
-                    else if (arg == "-d" || arg == "--delete")
-                        deleteExisting = true;
-                    else if (arg == "-r" || arg == "--random")
-                        randomiseSorting = true;
-                    else
-                        DisplayUsage($"Unknown option: {arg}");
+                    switch (arg.ToLowerInvariant())
+                    {
+                        case "-v":
+                        case "--verbose":
+                            verboseMode = true;
+                            break;
+
+                        case "-w":
+                        case "--write":
+                            overwriteExisting = true;
+                            break;
+
+                        case "-c":
+                        case "--clean":
+                            deleteExisting = true;
+                            break;
+
+                        case "-s":
+                        case "--shuffle":
+                            randomiseSorting = true;
+                            break;
+                        case "-r":
+                        case "--recursive":
+                            recursiveSearch = true;
+                            break;
+                        case "-g":
+                        case "--gap":
+                            if (i + 1 >= args.Length || !int.TryParse(args[++i], out middleBarWidth) || middleBarWidth < 0)
+                                DisplayUsage("Invalid or missing value for --gap.");
+                            break;
+
+                        case "-o":
+                        case "--output":
+                            if (i + 1 >= args.Length || !Directory.Exists(args[++i]))
+                                DisplayUsage("Missing or invalid output directory.");
+                            destinationFolder = args[i];
+                            break;
+
+                        case "-d":
+                        case "--dimensions":
+                            if (i + 1 >= args.Length || !ExtractDimensions(args[++i]))
+                                DisplayUsage("Invalid or missing value for --dimensions.");
+                            break;
+#if NOT_IMPLEMENTED
+                        case "-f":
+                        case "--filelist":
+                            if (i + 1 >= args.Length || !File.Exists(args[++i]))
+                                DisplayUsage("Missing or invalid file list.");
+                            fileList = args[i];
+                            break;
+
+                        case "-m":
+                        case "--mirror":
+                            mirror = true; 
+                            break;
+#endif
+                        default:
+                            DisplayUsage($"Unknown option: {arg}");
+                            break;
+                    }
                 }
                 else
                 {
-                    if (string.IsNullOrEmpty(sourceFolder))
-                    {
-                        if (System.IO.Directory.Exists(arg))
-                            sourceFolder = arg;
-                        else
-                            DisplayUsage($"Source folder '{arg}' does not exist.");
-                    }
-                    else if (string.IsNullOrEmpty(destinationFolder))
-                    {
-                        if (System.IO.Directory.Exists(arg))
-                            destinationFolder = arg;
-                        else
-                            DisplayUsage($"Destination folder '{arg}' does not exist.");
-                    }
-                    else if (frameHeight == 0 && frameWidth == 0)
-                    {
-                        if (ExtractDimensions(arg) == false)
-                            DisplayUsage("Photo frame dimensions are not in the format: [width]x[height]");
-                    }
-                    else 
-                    {
-                        if (int.TryParse(arg, out int result))
-                        {
-                            if (result < 0)
-                                DisplayUsage("Minimum frame gap cannot be a negative number.");
-                            else
-                                middleBarWidth = result;
-                        }
-                    }
+                    if (!Directory.Exists(arg))
+                        DisplayUsage($"Input directory '{arg}' does not exist.");
+                    inputDirs.Add(arg);
                 }
             }
-       
 
-            // Sanity checks here
+            // Final checks
+            if (inputDirs.Count == 0 && fileList == null)
+#if NOT_IMPLEMENTED
+                DisplayUsage("At least one input directory or --filelist must be specified.");
+#else
+                DisplayUsage("At least one input directory must be specified.");
+#endif
 
-            if (string.IsNullOrEmpty(sourceFolder))
-                DisplayUsage("Missing source folder.");
             if (string.IsNullOrEmpty(destinationFolder))
-                DisplayUsage("Missing destination folder.");
-            if (string.Compare(sourceFolder, destinationFolder, StringComparison.OrdinalIgnoreCase) == 0)
-                DisplayUsage("Source and destination folders cannot be the same.");
+                DisplayUsage("Missing destination folder. Use --output <dir>");
 
-            // Now verify dimensions
-            if (frameWidth == 0 && frameHeight == 0)
-                DisplayUsage("Missing photo frame dimensions. Use the format: [width]x[height]");
+#if NOT_IMPLEMENTED
+            if (fileList != null)
+                LoadFilesFromList(fileList);
+#endif
+
             if (frameWidth == 0 || frameHeight == 0)
-                DisplayUsage($"Invalid photo frame dimensions ({frameWidth}x{frameHeight})");
+                DisplayUsage("Missing or invalid photo frame dimensions. Use --dimensions <WxH>");
 
             if (frameWidth <= frameHeight)
                 DisplayUsage($"Photo frame width ({frameWidth}) must be greater than height ({frameHeight}).");
 
-            // Verify the middle black bar width
             if (middleBarWidth > frameWidth)
-                DisplayUsage($"Middle black bar width ({middleBarWidth}) cannot be greater than photo frame width ({frameWidth}).");
+                DisplayUsage($"Middle bar width ({middleBarWidth}) cannot exceed frame width ({frameWidth}).");
+
+            // Check if all input directories exist
+            foreach (var dir in inputDirs)
+                if (!Directory.Exists(dir))
+                    DisplayUsage($"Input directory '{dir}' does not exist.");
+
+            // Make sure that source and destination folders are not the same
+            if (inputDirs.Any(dir => string.Equals(dir, destinationFolder, StringComparison.OrdinalIgnoreCase)))
+                DisplayUsage($"Source and destination folders cannot be the same.");
         }
 
         /// <summary>
@@ -129,39 +169,48 @@ namespace SideBySide
         /// <param name="errorMessage">Error message</param>
         public static void DisplayUsage(string errorMessage = "")
         {
-            Console.WriteLine($"Usage: {System.AppDomain.CurrentDomain.FriendlyName} <source dir> <destination dir> <output dimensions> <separator width> [options]\n" +
+            Console.WriteLine($"Usage: {System.AppDomain.CurrentDomain.FriendlyName} [<input_dir>...] -o <output_dir> -d <WxH> [options]\n" +
                                 "Combine two portrait photos into a single landscape image, useful for\n" +
                                 "digital photo frames that display vertical images awkwardly.\n");
 
 
             if (string.IsNullOrEmpty(errorMessage))
                 Console.WriteLine($"This is version {OutputVersion(version)}, copyright © 2024-{DateTime.Now.Year} Richard Lawrence.\n" +
-                                    "Image manipulation powered by ImageMagick - https://www.imagemagick.org\n" +
+                                    "Image manipulation powered by SkiaSharp (https://github.com/mono/SkiaSharp)\n" +
                                     "Frame icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/frame)\n");
 
-            Console.WriteLine("Arguments:\n" +
-                                "  <source dir>           Directory containing portrait '.jpg' or '.jpeg' images.\n" +
-                                "                         Landscape or square images will be ignored.\n" +
-                                "  <destination dir>      Directory where combined landscape images will be saved.\n" +
-                                "                         Must already exist.\n" +
-                                "  <output dimensions>    Output resolution in the format [width]x[height]\n" +
-                                "                         Example: 800x600 (match your photo frame's resolution)\n" +
-                                "  <separator width>      Minimum number of black pixels between the two images.\n" +
-                                "                         Use 0 to remove the separator only when images fill\n" +
-                                "                         the full width exactly. Black bars may still appear.\n" +
+            Console.WriteLine("Mandatory:\n" +
+                                "  <input_dir>             One or more source directories containing portrait JPEG images.\n" +
+                                "                          Landscape or square images will be ignored.\n" +
+#if NOT_IMPLEMENTED
+                                "                          At least one input directory or the --filelist option is required.\n" +
+#endif
+                                "  -o, --output <dir>      Destination directory where combined images will be saved.\n" +
+                                "                          Must already exist.\n" +
+                                "  -d, --dimensions <WxH>  Output resolution in the format [width]x[height].\n" +
+                                "                          Example: 800x600 (match your photo frame's resolution).\n" +
                                 "\n" +
-                                "Options:\n" +
-                                "  -v, --verbose          Display detailed logging to the console.\n" +
-                                "  -o, --overwrite        Regenerate output files even if they already exist.\n" +
-                                "  -d, --delete           Remove any previously generated images before starting.\n" +
-                                "                         Only files with the prefix 'sideby-' will be deleted.\n" +
-                                "  -r, --random           Shuffle images randomly instead of sorting by date taken.\n" +
-                                "                         Timestamps will not be set on output files in this mode.\n" +
+                                "Optional:\n" +
+                                "  -g, --gap <pixels>      Minimum number of black pixels between the two images.\n" +
+                                "                          Use 0 to remove the separator where possible.\n" +
+                                "  -s, --shuffle           Shuffle images randomly instead of sorting by date taken.\n" +
+                                "                          Timestamps will not be set on output files in this mode.\n" +
+                                "  -r, --recursive         Recursively search input directories for images.\n" +
+                                "  -w, --write             Overwrite existing output files even if they already exist.\n" +
+                                "  -c, --clean             Delete previously generated images before starting.\n" +
+                                "                          Only .jpg files with the prefix 'sideby-' will be deleted.\n" +
+#if NOT_IMPLEMENTED
+                                "  -f, --filelist <file>   (Future) Load a list of image file paths from a text file.\n" +
+                                "  -m, --mirror            (Future) Delete any previously generated files that are no longer needed. \n" +
+#endif
+                                "  -v, --verbose           Display detailed logging to the console.\n" +
+                                "  -h, --help              Display this help message and exit.\n" +
                                 "\n" +
-                               $"Logs are written to {Path.Combine(appDataPath, "Logs")}\n");
+                               $"Logs are written to {Path.Combine(appDataPath, "Logs")}");
 
             if (!string.IsNullOrEmpty(errorMessage))
             {
+                Console.WriteLine();
                 Console.WriteLine($"Error: {errorMessage}");
                 Environment.Exit(-1);
             }
@@ -388,9 +437,7 @@ namespace SideBySide
 
             // Append `-preX` if build is greater than 0
             if (netVersion.Build > 0)
-            {
                 result += $"-pre{netVersion.Build}";
-            }
 
             return result;
         }

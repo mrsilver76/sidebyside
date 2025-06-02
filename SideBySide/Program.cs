@@ -23,15 +23,19 @@ using System.Diagnostics;
 using System.Reflection;
 using static SideBySide.Helpers;
 using static System.Net.Mime.MediaTypeNames;
-using ImageMagick;
+using SkiaSharp;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using MetadataExtractor;
+using MetadataExtractor.Formats.Exif;
 
 namespace SideBySide
 {
     internal class Program
     {
         // User-defined constants
-        public static string sourceFolder = "";  // Source folder containing images
+        public static List<string> inputDirs = new List<string>();  // List of input directories to scan for images
         public static string destinationFolder = "";  // Destination folder for processed images
         public static int frameWidth;  // Width of the digital frame
         public static int frameHeight;  // Height of the digital frame
@@ -40,6 +44,7 @@ namespace SideBySide
         public static bool overwriteExisting = false;  // Flag to overwrite existing images
         public static bool deleteExisting = false;  // Flag to delete existing images before processing
         public static bool randomiseSorting = false;  // Flag to randomise the order of images
+        public static bool recursiveSearch = false;  // Flag to search directories recursively
 
         // Internal constants
         public class ImageInfo  // Class to hold information about each image
@@ -78,7 +83,10 @@ namespace SideBySide
 
             Logger($"Parsed arguments: {string.Join(" ", args)}", true);
 
-            ScanFiles();
+            // Scan files in every input directory
+            foreach (string dir in inputDirs)
+                ScanFiles(dir);
+
             DeleteExistingFiles();
             ProcessFiles();
 
@@ -90,41 +98,43 @@ namespace SideBySide
         /// <summary>
         /// Scans the source folder for image files, extracts their dimensions and EXIF data, and adds them to the images list.
         /// </summary>
-        public static void ScanFiles()
+        public static void ScanFiles(string sourceFolder)
         {
-            Logger($"Looking for images in: {sourceFolder}");
+            // Perform a recursive or top-level scan based on user preference
+            SearchOption searchOption = recursiveSearch ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
-            string[] imageFiles = System.IO.Directory.GetFiles(sourceFolder, "*.*", SearchOption.AllDirectories)
-                                           .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                                        s.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
-                                           .ToArray();
+            Logger($"Looking for images in: {sourceFolder}{(recursiveSearch ? " (and sub-directories)" : "")}");
 
-            // For each image file found, work out the width and height
+
+            string[] imageFiles = System.IO.Directory.GetFiles(sourceFolder, "*.*", searchOption)
+                .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                            s.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
             foreach (string file in imageFiles)
             {
-                using var info = new MagickImage();
-                info.Ping(file);  // Faster way to get image info without loading the full image
-
-                // Skip files that are not valid images
-                if (info.Width == 0 || info.Height == 0)
+                using var codec = SKCodec.Create(file);
+                if (codec == null || codec.Info.Width == 0 || codec.Info.Height == 0)
                 {
                     Logger($"Skipping {file} as it is not a valid image file.", true);
                     continue;
                 }
 
-                // Skip non-portrait images
-                if (info.Width >= info.Height)
+                // Skip images that are not portrait-oriented
+                if (codec.Info.Width >= codec.Info.Height)
                     continue;
 
+                // Add the image to the list with its dimensions and creation date
                 images.Add(new ImageInfo
                 {
                     FullPath = file,
                     FileName = Path.GetFileName(file),
-                    FileWidth = (int)info.Width,
-                    FileHeight = (int)info.Height,
-                    CreationDate = GetExifDateTaken(info, file)
+                    FileWidth = codec.Info.Width,
+                    FileHeight = codec.Info.Height,
+                    CreationDate = GetExifDateTaken(file)
                 });
-                Logger($"Added {file} ({info.Width}x{info.Height})", true);
+
+                Logger($"Added {file} ({codec.Info.Width}x{codec.Info.Height})", true);
             }
         }
 
@@ -135,28 +145,26 @@ namespace SideBySide
         /// <param name="image"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        private static DateTime GetExifDateTaken(MagickImage image, string path)
+        private static DateTime GetExifDateTaken(string path)
         {
-            var profile = image.GetExifProfile();
-            if (profile != null)
+            try
             {
-                var value = profile.GetValue(ExifTag.DateTimeOriginal);
-                if (value == null)
-                    Logger($"No EXIF DateTimeOriginal tag found for {path}", true);
-                else
-                {
-                    if (DateTime.TryParseExact(value.Value, "yyyy:MM:dd HH:mm:ss", null, System.Globalization.DateTimeStyles.None, out var parsed))
-                        return parsed;
-                    else
-                        Logger($"Unable to parse DateTimeOriginal tag of '{value.Value}' for {path}", true);
-                }
-            }
-            else
-                Logger($"No EXIF profile found for {path}", true);
+                var directories = ImageMetadataReader.ReadMetadata(path);
+                var subIfdDirectory = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
 
-            // Fallback: use the earlier of created or modified
+                if (subIfdDirectory != null && subIfdDirectory.TryGetDateTime(ExifDirectoryBase.TagDateTimeOriginal, out DateTime exifDate))
+                    return exifDate;
+
+                Logger($"No DateTimeOriginal EXIF tag found for {path}", true);
+            }
+            catch (Exception ex)
+            {
+                Logger($"Failed to read EXIF data from {path}: {ex.Message}", true);
+            }
+
             DateTime created = File.GetCreationTime(path);
             DateTime modified = File.GetLastWriteTime(path);
+
             if (created < modified)
             {
                 Logger($"Falling back to creation date: {created}", true);
@@ -170,43 +178,50 @@ namespace SideBySide
         }
 
         /// <summary>
-        /// Given a string in the format "[width]x[height]", extracts the width and height values and assigns them to the frameWidth
-        /// and frameHeight variables. Returns true if successful, false otherwise.
+        /// Given a string in the format "[width]x[height]" or "[width],[height], extracts the width and height values
+        /// and assigns them to the frameWidth and frameHeight variables. Returns true if successful, false otherwise.
         /// </summary>
         /// <param name="dimensions"></param>
         /// <returns></returns>
         public static bool ExtractDimensions(string dimensions)
         {
-            string[] parts = (dimensions.ToLower()).Split('x');
-            if (parts.Length != 2)
+            var match = Regex.Match(dimensions.Trim().ToLower(), @"^(\d+)[x,](\d+)$");
+            if (!match.Success)
                 return false;
 
-            if (!int.TryParse(parts[0], out frameWidth) || !int.TryParse(parts[1], out frameHeight))
+            if (!int.TryParse(match.Groups[1].Value, out frameWidth) || !int.TryParse(match.Groups[2].Value, out frameHeight))
                 return false;
 
             return true;
         }
 
+        /// <summary>
+        /// Deletes existing files in the destination folder if the deleteExisting flag is set to true.
+        /// </summary>
         public static void DeleteExistingFiles()
         {
+            // Don't delete existing files if the flag is not set
             if (deleteExisting == false)
                 return;
 
             // Delete existing files in the destination folder
-            Logger($"Deleting existing files in: {destinationFolder}");
+            Logger($"Cleaning existing files in: {destinationFolder}");
 
-            if (!Directory.Exists(destinationFolder))
+            if (!System.IO.Directory.Exists(destinationFolder))
             {
                 Logger($"Destination folder does not exist: {destinationFolder}", true);
                 return;
             }
 
-            string[] existingFiles = Directory.GetFiles(destinationFolder, "sideby-*.jpg", SearchOption.TopDirectoryOnly);
+            // Get all files matching the pattern "sideby-*.jpg" in the destination folder
+            string[] existingFiles = System.IO.Directory.GetFiles(destinationFolder, "sideby-*.jpg", SearchOption.TopDirectoryOnly);
             if (existingFiles.Length == 0)
             {
                 Logger($"No existing files to delete in: {destinationFolder}", true);
                 return;
             }
+
+            // Attempt to delete each existing file
             foreach (string file in existingFiles)
             {
                 try
@@ -249,9 +264,9 @@ namespace SideBySide
                 Logger($"Not enough images to process: need at least 2, found {images.Count}.");
                 return;
             }
-            Logger($"Generating landscape images from {images.Count} portrait files...");
+            Logger($"Generating {frameWidth}x{frameHeight} landscape images from {images.Count} portrait files...");
 
-            int generated = 0;
+            int generated = 0, skipped = 0;
             for (int i = 0; i + 1 < images.Count; i += 2)
             {
                 ImageInfo image1 = images[i];
@@ -270,20 +285,27 @@ namespace SideBySide
                 if (exists && !overwriteExisting)
                 {
                     Logger($"Skipping existing image: {Path.GetFileName(filename)}");
+                    skipped++;
                     continue;
                 }
 
                 if (exists && overwriteExisting)
                     Logger($"Overwriting existing image: {filename}", true);
 
+                // Generate the side-by-side image
                 if (GenerateSideBySideImage(image1, image2, outputPath))
                     generated++;
+                else
+                    skipped++;
             }
 
             if (images.Count % 2 != 0)
+            {
                 Logger($"Unpaired image skipped: {images[^1].FileName}");
+                skipped++;
+            }
 
-            Logger($"Finished generating {Pluralise(generated, "landscape image", "landscape images")}.");
+            Logger($"Finished generating {Pluralise(generated, "landscape image", "landscape images")} ({skipped} skipped)");
         }
 
         /// <summary>
@@ -312,6 +334,13 @@ namespace SideBySide
             return $"sideby-{base64[..16]}.jpg";
         }
 
+        /// <summary>
+        /// Generates a side-by-side landscape image from two portrait images.
+        /// </summary>
+        /// <param name="imageA"></param>
+        /// <param name="imageB"></param>
+        /// <param name="outputPath"></param>
+        /// <returns></returns>
         public static bool GenerateSideBySideImage(ImageInfo imageA, ImageInfo imageB, string outputPath)
         {
             if (imageA == null || imageB == null)
@@ -322,51 +351,71 @@ namespace SideBySide
 
             Logger($"Generating landscape for {imageA.FileName} and {imageB.FileName} --> {outputPath}", true);
 
-            using var image1 = new MagickImage(imageA.FullPath);
-            using var image2 = new MagickImage(imageB.FullPath);
+            // Load original images
+            using var original1 = SKBitmap.Decode(imageA.FullPath);
+            using var original2 = SKBitmap.Decode(imageB.FullPath);
+
+            // Resize images to fit the frame height while maintaining aspect ratio
+            using var resized1 = ResizeToHeight(original1, frameHeight);
+            using var resized2 = ResizeToHeight(original2, frameHeight);
+
+            // Create a black bitmap which is the same height as the frame and half the width of the frame. This
+            // is what we'll place the resized images on to.
             int singleWidth = frameWidth / 2;
-
-            // Resize each image to target height preserving aspect
-            ResizeToHeight(image1, frameHeight);
-            ResizeToHeight(image2, frameHeight);
-
-            // Extend each image to the target width, centering them and filling with black
-            image1.Extent(new MagickGeometry((uint)singleWidth, (uint)frameHeight), Gravity.Center, MagickColors.Black);
-            image2.Extent(new MagickGeometry((uint)singleWidth, (uint)frameHeight), Gravity.Center, MagickColors.Black);
-
-            // Append image1 and image2 side by side (no separator yet)
-            using var collection = new MagickImageCollection { image1, image2 };
-            using var result = collection.AppendHorizontally();
-            if (result == null)
+            using var padded1 = new SKBitmap(singleWidth, frameHeight);
+            using (var canvas = new SKCanvas(padded1))
             {
-                Logger("Failed to create combined image!");
-                return false;
+                canvas.Clear(SKColors.Black);
+                int x = (singleWidth - resized1.Width) / 2;
+                canvas.DrawBitmap(resized1, x, 0);
             }
 
-            // Composite a black rectangle over the middle (if required)
-            if (middleBarWidth > 0)
+            using var padded2 = new SKBitmap(singleWidth, frameHeight);
+            using (var canvas = new SKCanvas(padded2))
             {
-                int xOffset = ((int)result.Width - middleBarWidth) / 2;
-                using var separator = new MagickImage(MagickColors.Black, (uint)middleBarWidth, (uint)frameHeight);
-                result.Composite(separator, xOffset, 0, CompositeOperator.Over);
+                canvas.Clear(SKColors.Black);
+                int x = (singleWidth - resized2.Width) / 2;
+                canvas.DrawBitmap(resized2, x, 0);
             }
 
-            // Save result
-            result.Quality = 90; // Set JPEG quality to 90% as memories should be high quality
-            result.Write(outputPath);
+            // Create the final output bitmap which is double the width of a single image
+            // and draw both padded images onto it side by side.
+            using var output = new SKBitmap(frameWidth, frameHeight);
+            using (var canvas = new SKCanvas(output))
+            {
+                canvas.DrawBitmap(padded1, 0, 0);
+                canvas.DrawBitmap(padded2, singleWidth, 0);
+
+                // If a middle bar is specified, then draw this over the top of the new composite image. This
+                // will cause some clipping of the images, but this avoids complicated calculations and, unless
+                // the width is large, it won't impact the image very much.
+                if (middleBarWidth > 0)
+                {
+                    int xOffset = (frameWidth - middleBarWidth) / 2;
+                    canvas.DrawRect(new SKRect(xOffset, 0, xOffset + middleBarWidth, frameHeight), new SKPaint { Color = SKColors.Black });
+                }
+            }
+
+            // Save the output image (at 80% quality) to the specified path
+            using var image = SKImage.FromBitmap(output);
+            using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80);
+            using var stream = File.OpenWrite(outputPath);
+            data.SaveTo(stream);
+
             Logger($"Landscape image created: {Path.GetFileName(outputPath)}");
 
-            // Set the creation date and last modified date to the earliest of the two images.
-            // However if the images were randomised then this date won't make much sense.
+            // Set the creation and last modified dates to the earlier of the two images' creation dates, but only
+            // if randomiseSorting is false. This ensures that the output image retains a meaningful timestamp.
             if (!randomiseSorting)
             {
                 DateTime creationDate = imageA.CreationDate < imageB.CreationDate ? imageA.CreationDate : imageB.CreationDate;
                 Logger($"Setting creation and last modified dates to {creationDate} for {Path.GetFileName(outputPath)}", true);
                 File.SetCreationTime(outputPath, creationDate);
                 File.SetLastWriteTime(outputPath, creationDate);
+#if NOT_IMPLEMENTED
+                // Set the date within the EXIF metadata of the image.
+#endif
             }
-            // Possible future improvement:
-            //   set the EXIF DateTimeOriginal tag to the same value as the creation date?
 
             return true;
         }
@@ -376,34 +425,15 @@ namespace SideBySide
         /// </summary>
         /// <param name="img"></param>
         /// <param name="targetHeight"></param>
-        private static void ResizeToHeight(MagickImage img, int targetHeight)
+        private static SKBitmap ResizeToHeight(SKBitmap img, int targetHeight)
         {
             double scale = (double)targetHeight / img.Height;
             int newWidth = (int)(img.Width * scale);
 
-            img.Resize((uint)newWidth, (uint)targetHeight);
+            var resized = new SKBitmap(newWidth, targetHeight);
+            using var canvas = new SKCanvas(resized);
+            canvas.DrawBitmap(img, new SKRect(0, 0, newWidth, targetHeight));
+            return resized;
         }
-
-#if false
-        /// <summary>
-        /// Generates a SHA256 hash of the input string.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        public static string GenerateSHA256Hash(string input)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = Encoding.UTF8.GetBytes(input);
-                byte[] hash = sha256.ComputeHash(bytes);
-                StringBuilder hashString = new StringBuilder();
-                foreach (byte b in hash)
-                {
-                    hashString.Append(b.ToString("x2"));
-                }
-                return hashString.ToString();
-            }
-        }
-#endif
     }
 }
