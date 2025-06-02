@@ -150,7 +150,11 @@ $multipleArch = $architectures.Count -gt 1
 
 # Create top-level Publish folder if missing
 $publishRoot = Join-Path (Get-Location) "Publish"
-if (-not (Test-Path $publishRoot)) {
+if (Test-Path $publishRoot) {
+    # Remove all contents (files and subdirectories), but not the folder itself
+    Get-ChildItem -Path $publishRoot -Recurse -Force | Remove-Item -Recurse -Force
+} else {
+    # Create the folder if it doesn't exist
     New-Item -ItemType Directory -Path $publishRoot | Out-Null
 }
 
