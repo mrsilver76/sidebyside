@@ -15,6 +15,8 @@ The result is a photo frame that feels curated - not cluttered or compromised.
 
 ## 🧰 Features
 * 💻 Runs on Windows, Linux (x64 & ARM) and macOS (Intel & Apple Silicon).
+* 📂 Accepts multiple source folders in a single run.
+* 🔎 Recursively scans subfolders when enabled.
 * 🖼️ Combines two portrait `.jpg` images into one seamless landscape `.jpg`.
 * ➖ Adds an optional divider to enhance visual separation between images.
 * 🎯 Automatically centers each photo within a black background.
@@ -41,14 +43,14 @@ Each release includes the following files (`x.x.x` denotes the version number):
 
 ### Windows users
 - Download the `.zip` file for Windows (see the table above) and extract it by right-clicking and selecting "Extract All.."
-- Ensure that the extracted `.dll` remains in the same directory as the binary - this is required for the native ImageMagick bindings to work.  
+- Ensure that the extracted `.dll` remains in the same directory as the binary - this is required for the native SkiaSharp bindings to work.  
 - Open a Command Prompt in that folder and run the program with your desired arguments.
  
 ### Linux and macOS users
 - Download the `.zip` file for your architecture (see the table above) and extract it.
 - Install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime) if it's not already available.
 - Make the binary executable: `chmod +x SideBySide-x.x.x-<your-platform>`
-- Ensure that the extracted `.so` (Linux) or `.dylib` (macOS) file remains in the same folder as the binary - this is required for the native ImageMagick bindings to work.
+- Ensure that the extracted `.so` (Linux) or `.dylib` (macOS) file remains in the same folder as the binary - this is required for the native SkiaSharp bindings to work.
 - Open a terminal in that folder and run the program with your desired arguments.
 
 ### Platform testing notes
@@ -59,59 +61,72 @@ Each release includes the following files (`x.x.x` denotes the version number):
 
 ## 🚀 Quick start guide
 
-Here is an example for using SideBySide. It will work on all platforms.
+Here are some examples for using SideBySide. They will work on all platforms.
 
 ```
-SideBySide "C:\Users\Richard\Pictures\Holiday" "C:\Users\Richard\Pictures\Frame" 1080x720 12 -d
+SideBySide "C:\Users\Richard\Pictures\Holiday" -o "C:\Users\Richard\Pictures\Frame" -d 1080x720 -c
 
-SideBySide "~/Pictures/Holiday" "~/Pictures/Frame" 1080x720 12 --delete
+SideBySide "~/Pictures/Holiday" --output "~/Pictures/Frame" --dimensions 1080x720 --clean
 ```
 * Look for portrait images in the `Pictures\Holiday` home folder
 * Output landscapes images in the `Pictures\Frame` home folder
 * Delete previously generated images in `Pictures\Frame` before starting
 * All landscape images to be 1080 x 720
-* Use a 12 pixel separator (where necessary)
+* Use no pixel separator (where possible)
 
+```
+SideBySide "C:\Users\Richard\Pictures\Holiday\Europe" "C:\Users\Richard\Pictures\Holiday\America" -o "C:\Users\Richard\Pictures\Frame" -d 1080x720 -g 10 -r -w
+
+SideBySide "~/Pictures/Holiday/Europe" "~/Pictures/Holiday/America" --ouput "~/Pictures/Frame" --dimensions 1080x720 -gap 10 --recursive --write
+```
+* Look for portrait images in the `Pictures\Holiday\Europe` and `Pictures\Holiday\America` home folders (and all sub-folders)
+* Output landscapes images in the `Pictures\Frame` home folder
+* All landscape images to be 1080 x 720
+* Use a pixel separator of no less than `10` pixels
+* Overwrites any previously generated images in `Pictures\Frame`
 
 ## 💻 Command line options
 
 ```
-SideBySide <source dir> <destination dir> <output dimensions> <separator width> [options]
+Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
 ```
 
 ### Mandatory arguments
 
-- **`<source dir>`**   
-  Directory containing portrait `.jpg` or `.jpeg` images. Landscape or square images will be ignored.
+- **`<input_dir>...`**   
+  One or more directories containing portrait `.jpg` or `.jpeg` images. Landscape or square images will be ignored.
 
-- **`<destination dir>`**   
+- **`-o <output_dir>`, `--output <output_dir>`**   
   Directory where generated landscape images will be saved. Must already exist.
 
-- **`<output dimensions>`**   
-  Output image dimensions specified as `[width]x[height]` (e.g. `1080x720`).
+- **`-d <WxH>`, `--dimensions <WxH>`**   
+  Output image dimensions specified as `[width]x[height]` or `[width],[height]` (e.g. `1080x720` or `1080,720`).
 
 >[!TIP]
 >For optimal display quality, set the output dimensions to match the native resolution of your digital photo frame. This ensures images are scaled accurately without distortion or unnecessary padding.
 
-- **`<seperator width>`**   
-  Minimum width in pixels of the black separator between images. Set to `0` to avoid adding extra separation.
+### Optional arguments
+
+- **`-g <pixels>`, `--gap <pixels>`**   
+  Minimum width in pixels of the black separator between images. If not provided or set to `0` then extra separation will be avoided where possible.
 
 >[!IMPORTANT]
 >Black borders on the left and right may appear depending on the aspect ratio of the original images. The separator width defines the _minimum_ number of pixels placed between the two images. If natural spacing already exceeds this value due to image proportions, no additional separator will be added.
 
-### Optional arguments
+- **`-s`, `--shuffle`**   
+  Shuffle/randomise the order of input images instead of sorting by date taken/created. When enabled, the output images will have their creation and modification timestamps set to the time of processing rather than preserving the originals.
 
-- **`-v`, `--verbose`**   
-  Enables detailed logging output for debugging and progress tracking. This information is always included in the logs.
+- **`-r`, `--recursive`**   
+  Recursively scan all subdirectories beneath each source folder. Only files with supported extensions will be considered.
 
-- **`-o`, `--overwrite`**   
+- **`-w`, `--write`**   
   Overwrite existing output images if they already exist in the destination directory.
 
-- **`-d`, `--delete`**   
-  Remove all generated images from the destination folder before processing begins. Only `.jpg` files with names starting with `sideby-` will be deleted.
-
-- **`-r`, `--random`**   
-  Randomise the order of input images instead of sorting by date taken/created. When enabled, the output images will have their creation and modification timestamps set to the time of processing rather than preserving the originals.
+- **`-c`, `--clean`**   
+  Clean/remove all generated images from the destination folder before processing begins. Only `.jpg` files with names starting with `sideby-` will be deleted.
+  
+- **`-v`, `--verbose`**   
+  Enables detailed logging output for debugging and progress tracking. This information is always included in the logs.
 
 - **`/?`, `-h`, `--help`**  
   Displays the full help text with all available options, credits and the location of the log files.
@@ -127,9 +142,9 @@ sideby-Z9dcF2gqex7o7RGn.jpg
 The filename is deterministic: given the same pair of input files, the output name will always be the same - regardless of options like separator width or output resolution. This ensures consistency across runs and avoids unnecessary duplication.
 
 >[!NOTE]
->By default, the tool will not overwrite existing files. If you change visual settings and want updated images, use the `--overwrite` flag to force regeneration.
+>By default, the tool will not overwrite existing files. If you change visual settings and want updated images, use the `--write` flag to force regeneration.
 
-When images are sorted by date (default), the output file’s creation and modification times are set to the earliest of the two input images. When using `--random`, timestamps are not modified to avoid implying an artificial order.
+When images are sorted by date (default), the output file’s creation and modification times are set to the earliest of the two input images. When using `--shuffle`, timestamps are not modified to avoid implying an artificial order.
 
 ## 🛟 Questions/problems?
 
@@ -137,10 +152,10 @@ Please raise an issue at https://github.com/mrsilver76/sidebyside/issues.
 
 ## 📝 Attribution
 - Frame icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/frame)
-- Image manipulation powered by ImageMagick - https://www.imagemagick.org
-- Photo: [Coconut Tree Near Body of Water Under Blue Sky](https://www.pexels.com/photo/coconut-tree-near-body-of-water-under-blue-sky-240526/) by Asad Photo Maldives
-- Photo: [Person Laying On Sand](https://www.pexels.com/photo/person-laying-on-sand-1770310/) by Rebeca Gonçalves
-- Photo: [Brown Wooden Panel](https://www.pexels.com/photo/brown-wooden-panel-347139/) by Tirachard Kumtanom
+- Image manipulation powered by [SkiaSharp](https://github.com/mono/SkiaSharp), a .NET wrapper around Google's Skia 2D graphics library.
+- Photo: [Coconut Tree Near Body of Water Under Blue Sky](https://www.pexels.com/photo/coconut-tree-near-body-of-water-under-blue-sky-240526/) by Asad Photo Maldives.
+- Photo: [Person Laying On Sand](https://www.pexels.com/photo/person-laying-on-sand-1770310/) by Rebeca Gonçalves.
+- Photo: [Brown Wooden Panel](https://www.pexels.com/photo/brown-wooden-panel-347139/) by Tirachard Kumtanom.
 
 ## 🕰️ Version history
 
