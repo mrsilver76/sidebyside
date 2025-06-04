@@ -150,6 +150,17 @@ When images are sorted by date (default), the output file’s creation and modif
 
 Please raise an issue at https://github.com/mrsilver76/sidebyside/issues.
 
+## 💡 Possible future enhancements
+
+These features are currently under consideration and may or may not be implemented. There is no commitment to deliver them, and no timeline has been established for their development. They represent exploratory ideas intended to improve the tool's functionality and usability.
+
+- Add a `--mirror` option to delete previously generated montage files that are not part of the current run.
+- Add a `--filelist` option to read image file paths from a text file instead of scanning directories.
+- Allow combining two landscape images into a single portrait-oriented image.
+- Write a new EXIF "date created" tag into each generated output image.
+
+If you're particularly enthusiastic about any of these potential features or have ideas of your own, you’re encouraged to raise a [feature request](https://github.com/mrsilver76/sidebyside/issues).
+
 ## 📝 Attribution
 - Frame icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/frame)
 - Image manipulation powered by [SkiaSharp](https://github.com/mono/SkiaSharp), a .NET wrapper around Google's Skia 2D graphics library.
