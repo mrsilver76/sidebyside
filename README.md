@@ -5,13 +5,11 @@ _A cross-platform command-line tool (Windows, Linux, macOS) for combining two po
 
 Many digital photo frames are designed with landscape orientation in mind.
 
-When they encounter portrait images, they often resort to awkward workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo: either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about presentation, this default behaviour can feel unsatisfying and unpolished.
+When they encounter portrait images, they often resort to awkward workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo: either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about presentation, this default behaviour is ugly.
 
 ![screenshot](https://github.com/mrsilver76/sidebyside/blob/main/frames.jpg?raw=true)
 
-SideBySide works around this problem by combining two portrait images into a single landscape composition. The pairing is automatic, the layout balanced and the final resolution tailored to your display. Because the output matches your frame’s aspect ratio exactly, each image appears larger and sharper - making better use of the available screen.
-
-The result is a photo frame that feels curated - not cluttered or compromised.
+SideBySide works around this problem by combining two portrait images into a single landscape composition. This ensures each photo is displayed without cropping or black bars. The combined image is also resized to match your frame’s resolution, reducing storage use without affecting visible quality.
 
 ## 🧰 Features
 * 💻 Runs on Windows, Linux (x64 & ARM) and macOS (Intel & Apple Silicon).
