@@ -97,7 +97,7 @@ Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
   One or more directories containing portrait `.jpg` or `.jpeg` images. Landscape or square images will be ignored.
 
 >[!NOTE]
->This argument is optional if you use `-f` (`--filelist`) instead.
+>At least one input directory or the `-f` (`--filelist`) option is required.
 
 - **`-o <output_dir>`, `--output <output_dir>`**   
   Directory where generated landscape images will be saved. Must already exist.
