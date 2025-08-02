@@ -1,15 +1,10 @@
 # PowerShell script to build and package a C# project for multiple architectures
+# Version 1.0.1 - 3rd June 2025
 
 # === User Configurable Section ===
 
 # Hardcoded list of target architectures
-$architectures = @(
-    "win-x64",
-    "linux-x64",
-    "linux-arm64",
-    "osx-arm64",
-    "osx-x64"
-)
+$architectures = @("win-x64", "linux-x64", "linux-arm64", "osx-arm64", "osx-x64")
 
 # === Helper Functions ===
 
@@ -99,15 +94,14 @@ function Rename-Executable {
 
     $newPath = Join-Path $folderPath $newName
 
-    # Rename the executable
-    $newExeFullPath = Join-Path -Path $exe.DirectoryName -ChildPath $newExeName
-    Move-Item -Path $exe.FullName -Destination $newExeFullPath -Force
+    # Rename
+    Move-Item -Path $exe.FullName -Destination $newPath -Force
 
     return $newPath
 }
 
-# Function to zip a folder excluding .pdb files
-function Zip-FolderExcludingPdb {
+# Function to archive (using zip) a folder excluding .pdb files
+function ArchiveFolderExcludingPdb {
     param(
         [string]$sourceFolder,
         [string]$destinationZip
@@ -202,7 +196,7 @@ foreach ($arch in $architectures) {
         $zipName = "$projectName-$version-$arch.zip"
         $zipPath = Join-Path $publishRoot $zipName
         Write-Host "Creating zip archive: $zipName"
-        Zip-FolderExcludingPdb -sourceFolder $publishFolder -destinationZip $zipPath
+        ArchiveFolderExcludingPdb -sourceFolder $publishFolder -destinationZip $zipPath
     } elseif ($files.Count -eq 1) {
         # Copy the single file to Publish folder
         Write-Host "Copying single executable to Publish folder"

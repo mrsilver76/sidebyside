@@ -19,14 +19,11 @@
  */
 
 using System.Text;
-using System.Diagnostics;
 using System.Reflection;
 using static SideBySide.Helpers;
-using static System.Net.Mime.MediaTypeNames;
 using SkiaSharp;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 
@@ -34,8 +31,8 @@ namespace SideBySide
 {
     internal class Program
     {
-        // User-defined constants
-        public static List<string> inputDirs = new List<string>();  // List of input directories to scan for images
+        // User-defined variables
+        public static List<string> inputDirs = [];  // List of input directories to scan for images
         public static string destinationFolder = "";  // Destination folder for processed images
         public static int frameWidth;  // Width of the digital frame
         public static int frameHeight;  // Height of the digital frame
@@ -45,8 +42,10 @@ namespace SideBySide
         public static bool deleteExisting = false;  // Flag to delete existing images before processing
         public static bool randomiseSorting = false;  // Flag to randomise the order of images
         public static bool recursiveSearch = false;  // Flag to search directories recursively
+        public static string inputFile = "";  // Input file containing image paths (if any)
+        public static bool mirrorMode = false;  // Flag to enable mirror mode, which deletes stale files in the destination folder
 
-        // Internal constants
+        // Internal variables
         public class ImageInfo  // Class to hold information about each image
         {
             public required string FullPath { get; set; }  // Full path to the image file
@@ -55,9 +54,11 @@ namespace SideBySide
             public int FileWidth { get; set; }  // Width of the image file
             public int FileHeight { get; set; }  // Height of the image file
         }
-        public static List<ImageInfo> images = new List<ImageInfo>();  // List of images to be processed
+        public static List<ImageInfo> images = [];  // List of images to be processed
         public static Version version = Assembly.GetExecutingAssembly().GetName().Version!;  // Version of the application
         public static string appDataPath = ""; // Path to the app data folder
+        public static List<string> imageFileList = [];  // List of image files found during scanning
+        public static HashSet<string> processedFiles = [];  // Set to track processed files
 
         /// <summary>
         /// Main entry point for the application.
@@ -81,14 +82,36 @@ namespace SideBySide
 
             Logger("Starting SideBySide...");
 
-            Logger($"Parsed arguments: {string.Join(" ", args)}", true);
+            // Log details about the environment and arguments
+            LogEnvironmentInfo(args);
 
-            // Scan files in every input directory
-            foreach (string dir in inputDirs)
-                ScanFiles(dir);
+            // Clear the image file list before starting
+            imageFileList.Clear();
+
+            // Look for files in the specified input directories
+            if (inputDirs.Count > 0)
+                foreach (string dir in inputDirs)
+                    GetImageFilesFromFolder(dir);
+
+            // Look for files in the specified input file list
+            if (!string.IsNullOrEmpty(inputFile) && File.Exists(inputFile))
+                GetImageFilesFromFileList();
+
+            // If no image files were found, log a warning and exit
+            if (imageFileList.Count == 0)
+            {
+                Logger("No image files found to process. Please check your input directories or file list.");
+                System.Environment.Exit(1);
+            }
+
+            // Get the information about the images found, selecting the ones that are appropriate for processing
+            CollectImageInformation();
 
             DeleteExistingFiles();
             ProcessFiles();
+
+            if (mirrorMode)
+                MirrorCleanup();
 
             Logger("SideBySide finished.");
             CheckLatestRelease();
@@ -96,22 +119,68 @@ namespace SideBySide
         }
 
         /// <summary>
-        /// Scans the source folder for image files, extracts their dimensions and EXIF data, and adds them to the images list.
+        /// Given a source folder, searches for all JPEG files (both .jpg and .jpeg) and adds them to the imageFileList.
         /// </summary>
-        public static void ScanFiles(string sourceFolder)
+        /// <param name="sourceFolder"></param>
+        public static void GetImageFilesFromFolder(string sourceFolder)
         {
-            // Perform a recursive or top-level scan based on user preference
             SearchOption searchOption = recursiveSearch ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
             Logger($"Looking for images in: {sourceFolder}{(recursiveSearch ? " (and sub-directories)" : "")}");
 
-
-            string[] imageFiles = System.IO.Directory.GetFiles(sourceFolder, "*.*", searchOption)
+            var files = System.IO.Directory.GetFiles(sourceFolder, "*.*", searchOption)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                            s.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
-                .ToArray();
+                s.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase));
 
-            foreach (string file in imageFiles)
+            imageFileList.AddRange(files);
+        }
+
+        /// <summary>
+        /// Loads the image file paths from a specified file list, filtering for JPEG files (.jpg and .jpeg). These
+        /// paths are added to the imageFileList for further processing.
+        /// </summary>
+        /// <param name="fileListPath"></param>
+
+        public static void GetImageFilesFromFileList()
+        {
+            if (string.IsNullOrEmpty(inputFile))
+            {
+                Logger("No input file list specified, skipping.", true);
+                return;
+            }
+
+            if (!File.Exists(inputFile))
+            {
+                Logger($"File list '{inputFile}' does not exist.");
+                return;
+            }
+
+            Logger($"Looking for images in: {inputFile}");
+
+            var lines = File.ReadAllLines(inputFile)
+                .Select(line => line.Trim())
+                .Where(line => !string.IsNullOrEmpty(line))
+                .Where(line => line.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                               line.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase));
+
+            foreach (var file in lines)
+            {
+                if (File.Exists(file))
+                    imageFileList.Add(file);
+                else
+                    Logger($"Warning: '{file}' listed in file list does not exist.", true);
+            }
+        }
+
+        /// <summary>
+        /// Walks through the image file list, collects information about each image and adds only the portrait-oriented images
+        /// to the images list.
+        /// </summary>
+        public static void CollectImageInformation()
+        {
+            Logger("Examining images and identifying candidates for processing...");
+
+            foreach (string file in imageFileList)
             {
                 using var codec = SKCodec.Create(file);
                 if (codec == null || codec.Info.Width == 0 || codec.Info.Height == 0)
@@ -136,6 +205,8 @@ namespace SideBySide
 
                 Logger($"Added {file} ({codec.Info.Width}x{codec.Info.Height})", true);
             }
+
+            Logger($"Found {images.Count} portrait images suitable for processing.");
         }
 
         /// <summary>
@@ -285,6 +356,7 @@ namespace SideBySide
                 if (exists && !overwriteExisting)
                 {
                     Logger($"Skipping existing image: {Path.GetFileName(filename)}");
+                    processedFiles.Add(outputPath);
                     skipped++;
                     continue;
                 }
@@ -294,7 +366,10 @@ namespace SideBySide
 
                 // Generate the side-by-side image
                 if (GenerateSideBySideImage(image1, image2, outputPath))
+                {
                     generated++;
+                    processedFiles.Add(outputPath);
+                }
                 else
                     skipped++;
             }
@@ -320,9 +395,8 @@ namespace SideBySide
                 throw new ArgumentException("Both file names must be provided.");
             if (file1.Equals(file2, StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("File names must be different.");
-
-            using var sha256 = SHA256.Create();
-            byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(file1 + "|" + file2));
+            
+            byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(file1 + "|" + file2));
 
             // Base64url encoding: URL-safe, compact, no padding
             string base64 = Convert.ToBase64String(hashBytes)
@@ -408,16 +482,45 @@ namespace SideBySide
             // if randomiseSorting is false. This ensures that the output image retains a meaningful timestamp.
             if (!randomiseSorting)
             {
+                // Use the earlier creation date of the two images
                 DateTime creationDate = imageA.CreationDate < imageB.CreationDate ? imageA.CreationDate : imageB.CreationDate;
                 Logger($"Setting creation and last modified dates to {creationDate} for {Path.GetFileName(outputPath)}", true);
                 File.SetCreationTime(outputPath, creationDate);
                 File.SetLastWriteTime(outputPath, creationDate);
-#if NOT_IMPLEMENTED
-                // Set the date within the EXIF metadata of the image.
-#endif
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Removes any stale files in the destination folder that were not processed during this run.
+        /// </summary>
+        private static void MirrorCleanup()
+        {
+            // If mirror mode is not enabled, do nothing
+            if (!mirrorMode)
+                return;
+
+            // Walk through the destination folder and delete any files that were not processed
+            // in this run.
+
+            var existing = System.IO.Directory.GetFiles(destinationFolder, "sideby-*.jpg", SearchOption.TopDirectoryOnly);
+            foreach (var file in existing)
+            {
+                var name = Path.GetFileName(file);
+                if (!processedFiles.Contains(file))
+                {
+                    Logger($"Mirror mode. Deleting stale file: {name}");
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger($"Failed to delete stale file {name}: {ex.Message}", true);
+                    }
+                }
+            }
         }
 
         /// <summary>
