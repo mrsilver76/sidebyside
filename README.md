@@ -190,7 +190,7 @@ SideBySide currently meets the needs it was designed for, and no major new featu
 - Added `--filelist` option.
 - A destination folder will now be created if one doesn't previously exist.
 - Cleaned up `--help` output.
-- Added OS version information to the logs.
+- Logger now includes OS information to help with troubleshooting across platforms.
 - Cleaned up various pieces of code (analyzer suggestions regarding naming, simplifications, and style)
 
 ### 0.9.0 (02 June 2025)
