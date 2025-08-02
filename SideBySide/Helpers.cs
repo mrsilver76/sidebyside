@@ -18,20 +18,10 @@
  * <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using IniParser;
 using IniParser.Model;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using XmpCore.Options;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using static SideBySide.Program;
 
 namespace SideBySide
@@ -47,9 +37,6 @@ namespace SideBySide
             if (args.Length == 0)
                 DisplayUsage();
 
-            
-            string? fileList = null;
-
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
@@ -57,7 +44,7 @@ namespace SideBySide
                 if (arg == "/?" || arg == "--help" || arg == "-h")
                     DisplayUsage();
 
-                if (arg.StartsWith("-"))
+                if (arg.StartsWith('-'))
                 {
                     switch (arg.ToLowerInvariant())
                     {
@@ -92,9 +79,9 @@ namespace SideBySide
 
                         case "-o":
                         case "--output":
-                            if (i + 1 >= args.Length || !Directory.Exists(args[++i]))
+                            if (i + 1 >= args.Length)
                                 DisplayUsage("Missing or invalid output directory.");
-                            destinationFolder = args[i];
+                            destinationFolder = args[++i];
                             break;
 
                         case "-d":
@@ -102,19 +89,16 @@ namespace SideBySide
                             if (i + 1 >= args.Length || !ExtractDimensions(args[++i]))
                                 DisplayUsage("Invalid or missing value for --dimensions.");
                             break;
-#if NOT_IMPLEMENTED
                         case "-f":
                         case "--filelist":
                             if (i + 1 >= args.Length || !File.Exists(args[++i]))
                                 DisplayUsage("Missing or invalid file list.");
-                            fileList = args[i];
+                            inputFile = args[i];
                             break;
-
                         case "-m":
                         case "--mirror":
-                            mirror = true; 
+                            mirrorMode = true; 
                             break;
-#endif
                         default:
                             DisplayUsage($"Unknown option: {arg}");
                             break;
@@ -129,20 +113,14 @@ namespace SideBySide
             }
 
             // Final checks
-            if (inputDirs.Count == 0 && fileList == null)
-#if NOT_IMPLEMENTED
+            if (inputDirs.Count == 0 && string.IsNullOrEmpty(inputFile))
                 DisplayUsage("At least one input directory or --filelist must be specified.");
-#else
-                DisplayUsage("At least one input directory must be specified.");
-#endif
+
+            if (!string.IsNullOrEmpty(inputFile) && !File.Exists(inputFile))
+                DisplayUsage($"File list '{inputFile}' does not exist.");
 
             if (string.IsNullOrEmpty(destinationFolder))
                 DisplayUsage("Missing destination folder. Use --output <dir>");
-
-#if NOT_IMPLEMENTED
-            if (fileList != null)
-                LoadFilesFromList(fileList);
-#endif
 
             if (frameWidth == 0 || frameHeight == 0)
                 DisplayUsage("Missing or invalid photo frame dimensions. Use --dimensions <WxH>");
@@ -161,6 +139,20 @@ namespace SideBySide
             // Make sure that source and destination folders are not the same
             if (inputDirs.Any(dir => string.Equals(dir, destinationFolder, StringComparison.OrdinalIgnoreCase)))
                 DisplayUsage($"Source and destination folders cannot be the same.");
+
+            // If the destination folder does not exist, create it
+            if (destinationFolder != null && !Directory.Exists(destinationFolder))
+            {
+                try
+                {
+                    Directory.CreateDirectory(destinationFolder);
+                }
+                catch (Exception ex)
+                {
+                    DisplayUsage($"Failed to create output directory '{destinationFolder}': {ex.Message}");
+                }
+            }
+
         }
 
         /// <summary>
@@ -180,29 +172,30 @@ namespace SideBySide
                                     "Frame icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/frame)\n");
 
             Console.WriteLine("Mandatory:\n" +
-                                "  <input_dir>             One or more source directories containing portrait JPEG images.\n" +
-                                "                          Landscape or square images will be ignored.\n" +
-#if NOT_IMPLEMENTED
-                                "                          At least one input directory or the --filelist option is required.\n" +
-#endif
-                                "  -o, --output <dir>      Destination directory where combined images will be saved.\n" +
-                                "                          Must already exist.\n" +
+                                "  <input_dir>             One or more source directories containing portrait\n" +
+                                "                          JPEG images. Landscape or square images will be\n" +
+                                "                          ignored. At least one input directory or the\n" +
+                                "                          --filelist option is required.\n" +
+                                "  -o, --output <dir>      Destination directory where combined images will be\n" +
+                                "                          saved. Will be created if it doesn't exist.\n" +
                                 "  -d, --dimensions <WxH>  Output resolution in the format [width]x[height].\n" +
-                                "                          Example: 800x600 (match your photo frame's resolution).\n" +
+                                "                          Example: 800x600 (match your photo frame resolution)\n" +
                                 "\n" +
                                 "Optional:\n" +
-                                "  -g, --gap <pixels>      Minimum number of black pixels between the two images.\n" +
-                                "                          Use 0 to remove the separator where possible.\n" +
-                                "  -s, --shuffle           Shuffle images randomly instead of sorting by date taken.\n" +
-                                "                          Timestamps will not be set on output files in this mode.\n" +
+                                "  -g, --gap <pixels>      Minimum number of black pixels between the two\n" +
+                                "                          images. Use 0 to remove the separator where possible.\n" +
+                                "  -s, --shuffle           Shuffle images randomly instead of sorting by date\n" +
+                                "                          taken. Timestamps will not be set on output files.\n" +
                                 "  -r, --recursive         Recursively search input directories for images.\n" +
-                                "  -w, --write             Overwrite existing output files even if they already exist.\n" +
+                                "  -w, --write             Overwrite existing output files.\n" +
                                 "  -c, --clean             Delete previously generated images before starting.\n" +
-                                "                          Only .jpg files with the prefix 'sideby-' will be deleted.\n" +
-#if NOT_IMPLEMENTED
-                                "  -f, --filelist <file>   (Future) Load a list of image file paths from a text file.\n" +
-                                "  -m, --mirror            (Future) Delete any previously generated files that are no longer needed. \n" +
-#endif
+                                "                          Only .jpg files with the prefix 'sideby-' will be\n" +
+                                "                          deleted.\n" +
+                                "  -f, --filelist <file>   Load a list of image file paths from a text file.\n" +
+                                "                          One per line, absolute paths only. Input\n" +
+                                "                          directories are optional with this option.\n" +
+                                "  -m, --mirror            Delete any previously generated files that weren't\n" +
+                                "                          created as part of this run.\n" +
                                 "  -v, --verbose           Display detailed logging to the console.\n" +
                                 "  -h, --help              Display this help message and exit.\n" +
                                 "\n" +
@@ -272,6 +265,24 @@ namespace SideBySide
             // If verbose mode is enabled, also write to console
             if (verbose == false || (verbose == true && verboseMode))
                 Console.WriteLine($"[{tsTime}] {message}");
+        }
+
+        /// <summary>
+        /// Output to the logs the environment information, such as .NET version, OS and architecture.
+        /// Also includes the parsed command line arguments if any were provided.
+        /// </summary>
+        /// <param name="args"></param>
+        public static void LogEnvironmentInfo(string[] args)
+        {
+            var dotnet = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+            var os = System.Runtime.InteropServices.RuntimeInformation.OSDescription.Trim();
+
+            var archName = RuntimeInformation.OSArchitecture.ToString().ToLowerInvariant();
+
+            Logger($"Running {OutputVersion(version)} on {dotnet} ({os}, {archName})", true);
+
+            if (args.Length > 0)
+                Logger($"Parsed arguments: {string.Join(" ", args)}", true);
         }
 
         /// <summary>
