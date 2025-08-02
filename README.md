@@ -186,7 +186,7 @@ SideBySide currently meets the needs it was designed for, and no major new featu
 
 ## 🕰️ Version history
 
-### 1.0.0 (xx August 2025)
+### 1.0.0 (02 August 2025)
 - 🏁 Declared as the first stable release.
 - Added `--mirror` option.
 - Added `--filelist` option.
