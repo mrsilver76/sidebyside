@@ -159,6 +159,8 @@ Each generated file is uniquely named using a short SHA256 hash derived from the
 For example:
 ```
 sideby-Z9dcF2gqex7o7RGn.jpg
+sideby-gBX41a-GkfcaaBA4.jpg
+sideby-QgVzwyOYxBrFTEjb.jpg
 ```
 The filename is deterministic: given the same pair of input files, the output name will always be the same - regardless of options like separator width or output resolution. This ensures consistency across runs and avoids unnecessary duplication.
 
