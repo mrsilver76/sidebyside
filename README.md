@@ -11,6 +11,10 @@ When they encounter portrait images, they often resort to awkward workarounds - 
 
 SideBySide works around this problem by combining two portrait images into a single landscape composition. This ensures each photo is displayed without cropping or black bars. The combined image is also resized to match your frame’s resolution, reducing storage use without affecting visible quality.
 
+>[!TIP]
+>🔹Got a messy photo collection? [GroupMachine](https://github.com/mrsilver76/groupmachine) can automatically sort photos and videos into albums.<br/>
+>🔹Manage your photos with Picasa? [StarCasa](https://github.com/mrsilver76/starcasa) outputs a list of your favorite portraits ready for SideBySide.
+
 ## 🧰 Features
 * 💻 Runs on Windows, Linux (x64 & ARM) and macOS (Intel & Apple Silicon).
 * 📂 Accepts multiple source folders in a single run.
