@@ -92,6 +92,8 @@ SideBySide "~/Pictures/Holiday/Europe" "~/Pictures/Holiday/America" --ouput "~/P
 
 ## 💻 Command line options
 
+SideBySide is a command-line tool. Run it from a terminal or command prompt, supplying all options and arguments directly on the command line. Logs with detailed information are also written and you can find the log file location using `-h` (`--help`).
+
 ```
 Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
 ```
