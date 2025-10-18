@@ -203,7 +203,7 @@ SideBySide currently meets the needs it was designed for, and no major new featu
 
 ## 🕰️ Version history
 
-### 1.1.0 (xx October 2025)
+### 1.1.0 (18 October 2025)
 - Added image comparison to prevent identical photos from being paired together.
 - Fixed issue where photos rotated via EXIF data were incorrectly detected as landscape.
 - Improved usage output: commands are now grouped by category and wrap correctly across terminal widths.
