@@ -48,14 +48,32 @@ Each release includes the following files (`x.x.x` denotes the version number):
 
 ### Windows users
 - Download the `.zip` file for Windows (see the table above) and extract it by right-clicking and selecting "Extract All.."
-- Ensure that the extracted `.dll` remains in the same directory as the binary - this is required for the native SkiaSharp bindings to work.  
+- Ensure that the extracted `libSkiaSharp.dll` remains in the same directory as the binary - this is required for the native SkiaSharp bindings to work.  
 - Open a Command Prompt in that folder and run the program with your desired arguments.
- 
-### Linux and macOS users
-- Download the `.zip` file for your architecture (see the table above) and extract it.
-- Install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime) if it's not already available.
-- Make the binary executable: `chmod +x SideBySide-x.x.x-<your-platform>`
-- Ensure that the extracted `.so` (Linux) or `.dylib` (macOS) file remains in the same folder as the binary - this is required for the native SkiaSharp bindings to work.
+
+### macOS users
+
+- Download the appropriate binary for your platform (see table above).
+- Ensure that the extracted `libSkiaSharp.dylib` file remains in the same folder as the binary - this is required for the native SkiaSharp bindings to work.
+- Install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime). Slightly more technical information can be found [here](https://learn.microsoft.com/en-gb/dotnet/core/install/macos).
+- ⚠️ Do not install the SDK, ASP.NET Core Runtime, or Desktop Runtime.
+- Make the downloaded file executable: `chmod +x SideBySide-x.x.x-<your-platform>`
+- Open a terminal in that folder and run the program with your desired arguments.
+- If you get `zsh: killed` when running the executable then:
+  - Apply an ad-hoc code signature:
+    - `codesign --force --deep --sign - SideBySide-x.x.x-<your-platform>`
+    - `codesign --force --deep --sign - libSkiaSharp.dylib`
+  - Remove the quarantine attribute:
+    - `xattr -d com.apple.quarantine SideBySide-x.x.x-<your-platform>`
+    - `xattr -d com.apple.quarantine libSkiaSharp.dylib`
+
+### Linux users
+
+- Download the appropriate binary for your platform (see table above).
+- Ensure that the extracted `libSkiaSharp.so` file remains in the same folder as the binary - this is required for the native SkiaSharp bindings to work.
+- Install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime). Slightly more technical pages can be found [here](https://learn.microsoft.com/en-gb/dotnet/core/install/linux).
+- ⚠️ Do not install the SDK, ASP.NET Core Runtime, or Desktop Runtime.
+- Make the downloaded file executable: `chmod +x SideBySide-x.x.x-<your-platform>`
 - Open a terminal in that folder and run the program with your desired arguments.
 
 ### Platform testing notes
