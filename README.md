@@ -24,7 +24,7 @@ SideBySide works around this problem by combining two portrait images into a sin
 * 📂 Accepts multiple source folders in a single run.
 * 📄 Supports file lists for precise control over included images.
 * 🔎 Recursively scans subfolders when enabled.
-* 🖼️ Combines two portrait `.jpg` images into one seamless landscape `.jpg`.
+* 🖼️ Combines two portrait `.jpg` (or `.jpeg`) images into one seamless landscape `.jpg`.
 * 🧠 Avoids pairing duplicate or closely timed photos, making the output more interesting.
 * ➖ Adds an optional divider to enhance visual separation between images.
 * 🎯 Automatically centers each photo within a black background.
