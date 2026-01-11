@@ -9,7 +9,7 @@ _A cross-platform command-line tool (Windows, Linux, macOS) for combining two po
 
 Many digital photo frames are designed with landscape orientation in mind.
 
-When they encounter portrait images, they often resort to awkward workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo: either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about presentation, this default behaviour is ugly.
+When they encounter portrait images, they often resort to awkward workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo, either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about the presentation of their photos, this default behaviour is ugly.
 
 ![screenshot](https://github.com/mrsilver76/sidebyside/blob/main/frames.jpg?raw=true)
 
@@ -25,10 +25,10 @@ SideBySide works around this problem by combining two portrait images into a sin
 * 📄 Supports file lists for precise control over included images.
 * 🔎 Recursively scans subfolders when enabled.
 * 🖼️ Combines two portrait `.jpg` images into one seamless landscape `.jpg`.
-* 🧠 Detects and avoids pairing visually identical photos.
+* 🧠 Avoids pairing duplicate or closely timed photos, making the output more interesting.
 * ➖ Adds an optional divider to enhance visual separation between images.
 * 🎯 Automatically centers each photo within a black background.
-* 📐 Resizes output to optimally fit digital photo frame displays.
+* 📐 Resizes output (and reduces the file size) to optimally fit digital photo frame displays.
 * 🔐 Creates uniquely named files to prevent duplicates and maintain consistency.
 * 🔀 Supports sorting photos by date taken/created or random order.
 * 🪞 Mirrors output folder by removing stale files no longer in source.
@@ -224,6 +224,11 @@ SideBySide currently meets the needs it was designed for, and no major new featu
 - Photo: [Brown Wooden Panel](https://www.pexels.com/photo/brown-wooden-panel-347139/) by Tirachard Kumtanom.
 
 ## 🕰️ Version history
+
+### 1.2.0 (xx January 2026)
+- Added a time-based check to avoid pairing photos taken within one minute of each other. This reduces the chances of visually similar photos being placed together, while still allowing photos from the same event to pair.
+- Improved the output and grammar of content displayed during processing.
+- Fixed an issue where the resulting images did not have the "Last Modified" date set correctly.
 
 ### 1.1.0 (18 October 2025)
 - Added image comparison to prevent identical photos from being paired together.
