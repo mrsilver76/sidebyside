@@ -225,7 +225,7 @@ SideBySide currently meets the needs it was designed for, and no major new featu
 
 ## 🕰️ Version history
 
-### 1.2.0 (xx January 2026)
+### 1.2.0 (17 January 2026)
 - Added a time-based check to avoid pairing photos taken within one minute of each other. This reduces the chances of visually similar photos being placed together, while still allowing photos from the same event to pair.
 - Improved the output and grammar of content displayed during processing.
 - Fixed an issue where the resulting images did not have the "Last Modified" date set correctly.
