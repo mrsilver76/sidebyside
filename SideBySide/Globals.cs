@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2025 Richard Lawrence
+ * Copyright (C) 2024-2026 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License

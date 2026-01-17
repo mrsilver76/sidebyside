@@ -13,13 +13,13 @@
 	<Description>Combine two portrait photos into a single landscape image</Description>
 	<PackageProjectUrl>https://github.com/mrsilver76/sidebyside</PackageProjectUrl>
 	<RepositoryUrl>https://github.com/mrsilver76/sidebyside</RepositoryUrl>
-	<Copyright>Copyright © 2024-2025 Richard Lawrence</Copyright>
+	<Copyright>Copyright © 2024-2026 Richard Lawrence</Copyright>
 
 	  <!-- Version information -->
 	  <!-- Remember major.minor.BUILD.revision! -->
-	  <Version>1.1.0.0</Version>
-	  <AssemblyVersion>1.1.0.0</AssemblyVersion>
-	  <FileVersion>1.1.0.0</FileVersion>
+	  <Version>1.2.0.0</Version>
+	  <AssemblyVersion>1.2.0.0</AssemblyVersion>
+	  <FileVersion>1.2.0.0</FileVersion>
 	  <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
