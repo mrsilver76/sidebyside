@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2025 Richard Lawrence
+ * Copyright (C) 2024-2026 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -60,7 +60,10 @@ namespace SideBySide
             catch (Exception ex)
             {
                 Logger.Write($"Failed to read EXIF data from {path}: {ex.Message}", true);
+                // Drop through to fallback
             }
+
+            // EXIF data not available or corrupted, so fall back to file dates
 
             DateTime created = File.GetCreationTime(path);
             DateTime modified = File.GetLastWriteTime(path);
@@ -83,7 +86,7 @@ namespace SideBySide
         /// </summary>
         public static void CollectImageInformation()
         {
-            Logger.Write("Examining images and identifying candidates for processing...");
+            Logger.Write("Filtering and selecting valid portrait images...");
 
             foreach (string file in Globals.ImageFileList)
             {
@@ -130,7 +133,7 @@ namespace SideBySide
                 Logger.Write($"Added {file} ({codec.Info.Width}x{codec.Info.Height})", true);
             }
 
-            Logger.Write($"Found {Globals.Images.Count} suitable portrait images.");
+            Logger.Write($"Found {GrammarHelper.Pluralise(Globals.Images.Count, "suitable portrait image", "suitable portrait images")}.");
         }
 
         /// <summary>

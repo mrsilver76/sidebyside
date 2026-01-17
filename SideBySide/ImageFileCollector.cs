@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2025 Richard Lawrence
+ * Copyright (C) 2024-2026 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -49,6 +49,8 @@ namespace SideBySide
                 Logger.Write("No image files found to process. Please check your input directories or file list.");
                 System.Environment.Exit(1);
             }
+
+            Logger.Write($"Found {GrammarHelper.Pluralise(Globals.ImageFileList.Count, "image file", "image files")} to process.");
         }
 
         /// <summary>
@@ -72,7 +74,6 @@ namespace SideBySide
         /// Loads the image file paths from a specified file list, filtering for JPEG files (.jpg and .jpeg). These
         /// paths are added to the imageFileList for further processing.
         /// </summary>
-        /// <param name="fileListPath"></param>
         private static void GetImageFilesFromFileList()
         {
             if (string.IsNullOrEmpty(Globals.InputFile))

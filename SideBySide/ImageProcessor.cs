@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2025 Richard Lawrence
+ * Copyright (C) 2024-2026 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -65,9 +65,11 @@ namespace SideBySide
             int i = 0;
             while (i + 1 < Globals.Images.Count)
             {
+                // Get the two images to process
                 Globals.ImageInfo image1 = Globals.Images[i];
                 Globals.ImageInfo image2 = Globals.Images[i + 1];
 
+                // Validate the images
                 if (image1 == null || image2 == null)
                 {
                     Logger.Write($"Skipping invalid image pair: {image1?.FileName ?? "null"} and {image2?.FileName ?? "null"}", true);
@@ -75,12 +77,33 @@ namespace SideBySide
                     continue;
                 }
 
+                // If the two images are identical files, then skip one of them
                 if (ImageMetadataExtractor.FilesAreEqual(image1.FullPath, image2.FullPath))
                 {
                     Logger.Write($"Skipping duplicate image pair: {image1.FileName} and {image2.FileName}", true);
                     skipped++;
                     i++; // skip by one to try next image
                     continue;
+                }
+
+                // If the two images were taken within 60 seconds of each other then we will assume that they
+                // could be broadly similar, so we'll swap the second image with the next one in the list (if there is one). This is
+                // an attempt to reduce the likelihood of two very similar images being combined together.
+                double totalSeconds = (image2.CreationDate - image1.CreationDate).TotalSeconds;
+                if (totalSeconds < 60 && i + 2 < Globals.Images.Count)
+                {
+                    var image3 = Globals.Images[i + 2];
+
+                    // If we have a third image and it's not identical to image1, then swap them
+                    if (image3 != null && !ImageMetadataExtractor.FilesAreEqual(image1.FullPath, image3.FullPath))
+                    {
+                        // Log the swap
+                        Logger.Write($"{image1.FileName} and {image2.FileName} are {totalSeconds} secs apart, swapping {image2.FileName} with {image3.FileName}", true);
+                        // Swap i+1 and i+2
+                        (Globals.Images[i + 1], Globals.Images[i + 2]) = (Globals.Images[i + 2], Globals.Images[i + 1]);
+                        // Reassign after swap
+                        image2 = Globals.Images[i + 1];
+                    }
                 }
 
                 // Generate a filename for them and then check if the destination exists
@@ -124,7 +147,10 @@ namespace SideBySide
                 skipped++;
             }
 
-            Logger.Write($"Finished generating {GrammarHelper.Pluralise(generated, "landscape image", "landscape images")} ({skipped} skipped)");
+            if (skipped > 0)
+                Logger.Write($"Finished generating {GrammarHelper.Pluralise(generated, "landscape image", "landscape images")} ({skipped} skipped)");
+            else
+                Logger.Write($"Finished generating {GrammarHelper.Pluralise(generated, "landscape image", "landscape images")}.");
         }
 
         /// <summary>
@@ -229,8 +255,8 @@ namespace SideBySide
             // Save the output image (at 80% quality) to the specified path
             using var image = SKImage.FromBitmap(output);
             using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80);
-            using var stream = File.OpenWrite(outputPath);
-            data.SaveTo(stream);
+            using (var stream = File.Open(outputPath, FileMode.Create, FileAccess.Write))
+                data.SaveTo(stream);
 
             Logger.Write($"Landscape image created: {Path.GetFileName(outputPath)}");
 
@@ -327,6 +353,5 @@ namespace SideBySide
             canvas.DrawBitmap(img, new SKRect(0, 0, newWidth, targetHeight));
             return resized;
         }
-
     }
 }
