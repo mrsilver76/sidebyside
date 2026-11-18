@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2026 Richard Lawrence
+ * Copyright (C) 2024 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@ namespace SideBySide
     /// <summary>
     /// All global variables used by the application.
     /// </summary>
-    public static class Globals
+    internal static class Globals
     {
         // Variables that can be set by the user via command line arguments
         #region User-defined variables
@@ -43,7 +43,10 @@ namespace SideBySide
         public static int FrameHeight { get; set; }
 
         /// <summary>Width of the black middle bar between images</summary>
-        public static int MiddleBarWidth { get; set; }
+        public static int MiddleBarWidth { get; set; } = 16;
+
+        /// <summary>Photos taken fewer than this many seconds apart are not paired if it can be avoided (0 turns this off)</summary>
+        public static int ProximitySeconds { get; set; } = 120;
 
         /// <summary>Flag for verbose output</summary>
         public static bool VerboseMode { get; set; }
@@ -75,7 +78,7 @@ namespace SideBySide
         #region Internal variables
 
         /// <summary>Class to hold information about each image</summary>
-        public class ImageInfo
+        internal sealed class ImageInfo
         {
             /// <summary>Full path to the image file</summary>
             public required string FullPath { get; set; }
@@ -100,7 +103,7 @@ namespace SideBySide
         public static Version ProgramVersion { get; } = Assembly.GetExecutingAssembly().GetName().Version!;
 
         /// <summary>Path to the app data folder</summary>
-        public static string AppDataPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SideBySide");
+        public static string AppDataPath { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create), "SideBySide");
 
         /// <summary>List of image files found during scanning</summary>
         public static List<string> ImageFileList { get; set; } = [];

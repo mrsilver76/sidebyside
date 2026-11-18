@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2026 Richard Lawrence
+ * Copyright (C) 2024 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -27,16 +27,16 @@ namespace SideBySide
     {
         /// <summary>
         /// Collects all image files from the specified input directories and input file list,
-        /// then populates the global imageFileList with the results.
+        /// then populates Globals.ImageFileList with the results.
         /// </summary>
-        public static void GetAllImageFiles()
+        /// <returns>True if at least one image file was found, otherwise false.</returns>
+        public static bool GetAllImageFiles()
         {
             Globals.ImageFileList.Clear();
 
             // Look for files in the specified input directories
-            if (Globals.InputDirs.Count > 0)
-                foreach (string dir in Globals.InputDirs)
-                    GetImageFilesFromFolder(dir);
+            foreach (string dir in Globals.InputDirs)
+                GetImageFilesFromFolder(dir);
 
             // Look for files in the specified input file list. If the user specifies both input directories
             // and a file list, we combine the results from both sources.
@@ -47,23 +47,29 @@ namespace SideBySide
             if (Globals.ImageFileList.Count == 0)
             {
                 Logger.Write("No image files found to process. Please check your input directories or file list.");
-                System.Environment.Exit(1);
+                return false;
             }
 
             Logger.Write($"Found {GrammarHelper.Pluralise(Globals.ImageFileList.Count, "image file", "image files")} to process.");
+            return true;
         }
 
         /// <summary>
-        /// Given a source folder, searches for all JPEG files (both .jpg and .jpeg) and adds them to the imageFileList.
+        /// Given a source folder, searches for all JPEG files (both .jpg and .jpeg) and adds them to Globals.ImageFileList.
         /// </summary>
-        /// <param name="sourceFolder"></param>
+        /// <param name="sourceFolder">The folder to search.</param>
         private static void GetImageFilesFromFolder(string sourceFolder)
         {
-            SearchOption searchOption = Globals.RecursiveSearch ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            // IgnoreInaccessible is on by default, so unreadable sub-folders are skipped instead of throwing
+            var options = new EnumerationOptions { RecurseSubdirectories = Globals.RecursiveSearch };
 
-            Logger.Write($"Looking for images in: {sourceFolder}{(Globals.RecursiveSearch ? " (and sub-directories)" : "")}");
+            string recursiveNote = "";
+            if (Globals.RecursiveSearch)
+                recursiveNote = " (and sub-directories)";
 
-            var files = System.IO.Directory.GetFiles(sourceFolder, "*.*", searchOption)
+            Logger.Write($"Looking for images in: {sourceFolder}{recursiveNote}");
+
+            var files = Directory.EnumerateFiles(sourceFolder, "*.*", options)
                 .Where(s => s.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
                 s.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase));
 
@@ -72,22 +78,10 @@ namespace SideBySide
 
         /// <summary>
         /// Loads the image file paths from a specified file list, filtering for JPEG files (.jpg and .jpeg). These
-        /// paths are added to the imageFileList for further processing.
+        /// paths are added to Globals.ImageFileList for further processing.
         /// </summary>
         private static void GetImageFilesFromFileList()
         {
-            if (string.IsNullOrEmpty(Globals.InputFile))
-            {
-                Logger.Write("No input file list specified, skipping.", true);
-                return;
-            }
-
-            if (!File.Exists(Globals.InputFile))
-            {
-                Logger.Write($"File list '{Globals.InputFile}' does not exist.");
-                return;
-            }
-
             Logger.Write($"Looking for images in file: {Globals.InputFile}");
 
             // Read all lines from the file, trim whitespace, and filter for .jpg/.jpeg files

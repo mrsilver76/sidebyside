@@ -5,6 +5,7 @@
  */
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace SideBySide
 {
@@ -13,16 +14,33 @@ namespace SideBySide
     /// </summary>
     internal static class Logger
     {
+        /// <summary>Writer for today's log file, or null when the logger is not open.</summary>
         private static StreamWriter? _writer;
+
+        /// <summary>Stream under the writer, kept so that each write can seek to the end first.</summary>
+        private static FileStream? _stream;
+
+        /// <summary>True once Initialise has run and until Shutdown closes the log.</summary>
         private static bool _initialised;
-        private static readonly object _lock = new();
+
+        /// <summary>Guards the writer, the stream and the initialised flag.</summary>
+        private static readonly Lock _lock = new();
+
+        /// <summary>Keeps the SIGTERM handler registered for the life of the process.</summary>
+        private static PosixSignalRegistration? _sigtermRegistration;
+
+        /// <summary>Set to 1 by the first CTRL+C or SIGTERM so that repeated signals are handled once.</summary>
+        private static int _signalHandled;
+
+        /// <summary>Full path of today's log file, or null until the logger is initialised.</summary>
+        public static string? LogFilePath { get; private set; }
 
         /// <summary>
         /// Initialise the logger with the specified log folder path. This will create the folder if it doesn't exist,
         /// open today's log file, and delete log files older than 14 days.
         /// </summary> 
         /// <param name="logFolderPath">Path to folder containing logs</param>
-        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentException">Thrown when the log folder path is null or empty.</exception>
         public static void Initialise(string logFolderPath)
         {
             lock (_lock)
@@ -42,10 +60,12 @@ namespace SideBySide
                         File.Delete(file);
                 }
 
-                string logFileName = $"log-{DateTime.Now:yyyy-MM-dd}.log";
+                string logFileName = $"log-{DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}.log";
                 string logFilePath = Path.Combine(logFolderPath, logFileName);
+                LogFilePath = logFilePath;
 
-                _writer = new StreamWriter(new FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read))
+                _stream = new FileStream(logFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                _writer = new StreamWriter(_stream)
                 {
                     AutoFlush = true
                 };
@@ -53,18 +73,38 @@ namespace SideBySide
                 AppDomain.CurrentDomain.ProcessExit += (_, __) => Shutdown();
                 Console.CancelKeyPress += (_, e) =>
                 {
+                    e.Cancel = false;
+
+                    // A second signal while shutting down (e.g. from timeout, which also signals the process group) is ignored
+                    if (Interlocked.Exchange(ref _signalHandled, 1) != 0)
+                        return;
+
                     Write("CTRL+C pressed, shutting down...");
                     Shutdown();
-                    e.Cancel = false;
                 };
+                _sigtermRegistration = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context =>
+                {
+                    context.Cancel = false;
+                    if (Interlocked.Exchange(ref _signalHandled, 1) != 0)
+                        return;
+
+                    Write("SIGTERM received, shutting down...");
+                    Shutdown();
+                });
                 AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
                 {
                     // Make sure that the cursor is visible again if we crash
-                    Console.CursorVisible = true;
+                    if (!Console.IsOutputRedirected)
+                        Console.CursorVisible = true;
+
+                    // Keep a record of the crash in the log file (file only, as the runtime reports it on the console)
+                    Write($"Unhandled exception: {e.ExceptionObject}", true);
                 };
 
                 // Hide the console cursor to prevent it from distracting from log messages
-                Console.CursorVisible = false;
+                // (setting it throws when output is redirected)
+                if (!Console.IsOutputRedirected)
+                    Console.CursorVisible = false;
 
                 _initialised = true;
             }
@@ -73,7 +113,8 @@ namespace SideBySide
         /// <summary>
         /// Write a message to the log file and console with a timestamp.
         /// </summary>
-        /// <param name="message">The message to log</param>
+        /// <param name="message">The message to log.</param>
+        /// <param name="verbose">True to write to the log file only, and to the console only when verbose mode is on.</param>
         public static void Write(string message, bool verbose = false)
         {
             lock (_lock)
@@ -85,9 +126,15 @@ namespace SideBySide
                 string tsTime = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
                 string logEntry = $"[{tsDate} {tsTime}] {message}";
 
+                // Another instance may have appended since our last write, so move to the end first or we would overwrite its lines
+                _stream!.Seek(0, SeekOrigin.End);
                 _writer.WriteLine(logEntry);
-                if (!verbose)
+                if (!verbose || Globals.VerboseMode)
+                {
+                    // Make room if a progress bar is showing on this line
+                    ProgressBar.Pause();
                     Console.WriteLine($"[{tsTime}] {message}");
+                }
             }
         }
 
@@ -98,7 +145,8 @@ namespace SideBySide
         private static void Shutdown()
         {
             // Restore the console cursor visibility
-            Console.CursorVisible = true;
+            if (!Console.IsOutputRedirected)
+                Console.CursorVisible = true;
 
             lock (_lock)
             {
@@ -106,6 +154,7 @@ namespace SideBySide
                 {
                     _writer.Dispose();
                     _writer = null;
+                    _stream = null;
                 }
                 _initialised = false;
             }
