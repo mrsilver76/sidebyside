@@ -2,32 +2,32 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-	<!-- Assembly information -->
-	<ApplicationIcon>SideBySide.ico</ApplicationIcon>
-	<Authors>Richard Lawrence</Authors>
-	<Product>SideBySide</Product>
-	<Description>Combine two portrait photos into a single landscape image</Description>
-	<PackageProjectUrl>https://github.com/mrsilver76/sidebyside</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/mrsilver76/sidebyside</RepositoryUrl>
-	<Copyright>Copyright © 2024-2026 Richard Lawrence</Copyright>
+    <!-- Assembly information -->
+    <ApplicationIcon>SideBySide.ico</ApplicationIcon>
+    <Authors>Richard Lawrence</Authors>
+    <Product>SideBySide</Product>
+    <Description>Combine two portrait photos into a single landscape image</Description>
+    <PackageProjectUrl>https://github.com/mrsilver76/sidebyside</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mrsilver76/sidebyside</RepositoryUrl>
+    <Copyright>Copyright © 2024 Richard Lawrence</Copyright>
 
-	  <!-- Version information -->
-	  <!-- Remember major.minor.BUILD.revision! -->
-	  <Version>1.2.0.0</Version>
-	  <AssemblyVersion>1.2.0.0</AssemblyVersion>
-	  <FileVersion>1.2.0.0</FileVersion>
-	  <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- Version information -->
+    <!-- Remember major.minor.BUILD.revision! -->
+    <Version>1.3.0.0</Version>
+    <AssemblyVersion>1.3.0.0</AssemblyVersion>
+    <FileVersion>1.3.0.0</FileVersion>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ini-parser" Version="2.5.2" />
-    <PackageReference Include="MetadataExtractor" Version="2.8.1" />
-    <PackageReference Include="SkiaSharp" Version="3.119.0" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.0" />
+    <PackageReference Include="ini-parser" Version="2.5.2" NoWarn="NU1701" />
+    <PackageReference Include="MetadataExtractor" Version="2.9.3" />
+    <PackageReference Include="SkiaSharp" Version="4.156.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.156.1" />
   </ItemGroup>
 
 </Project>

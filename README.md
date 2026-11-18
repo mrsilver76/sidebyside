@@ -1,34 +1,34 @@
-# SideBySide
+﻿# <img src="https://raw.githubusercontent.com/mrsilver76/sidebyside/refs/heads/main/SideBySide/SideBySide.ico" width="48" height="48"> SideBySide
 
 <p><img src="https://img.shields.io/badge/Windows-supported-0078D6?logo=windows&logoColor=white" alt="Windows"> <img src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=black" alt="Linux"> <img src="https://img.shields.io/badge/macOS-supported-000000?logo=apple&logoColor=white" alt="macOS"> <img src="https://img.shields.io/badge/.NET-C%23-512BD4?logo=dotnet&logoColor=white" alt=".NET/C#"> 
 <img src="https://img.shields.io/github/license/mrsilver76/sidebyside?logo=gnu&logoColor=white" alt="GPL License"> <img src="https://img.shields.io/github/downloads/mrsilver76/sidebyside/total" alt="total downloads"></p>
 
-_A cross-platform command-line tool (Windows, Linux, macOS) for combining two portrait photos into a single landscape image. This is useful for digital photo frames that display vertical images awkwardly._
+_A cross-platform command-line tool (Windows, Linux, macOS) for combining two portrait photos into a single landscape image. This is useful for digital photo frames that display vertical images poorly._
 
 ## 🖼️ Framing the problem
 
 Many digital photo frames are designed with landscape orientation in mind.
 
-When they encounter portrait images, they often resort to awkward workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo, either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about the presentation of their photos, this default behaviour is ugly.
+When they encounter portrait images, they often resort to terrible workarounds - adding black bars to the sides (_pillarboxing_) or cropping the top and bottom to fill the frame. Both approaches compromise the photo, either by shrinking it down to an underwhelming size or by cutting out important parts of the image. For users who care about the presentation of their photos, this default behaviour is ugly.
 
 ![screenshot](https://github.com/mrsilver76/sidebyside/blob/main/frames.jpg?raw=true)
 
-SideBySide works around this problem by combining two portrait images into a single landscape composition. This ensures each photo is displayed without cropping or black bars. The combined image is also resized to match your frame’s resolution, reducing storage use without affecting visible quality.
+SideBySide works around this problem by combining two portrait images into a single landscape image, with each photo taking up the full height of the frame. The combined image is also resized to match your frame’s resolution, which reduces storage use.
 
 >[!TIP]
->- Got a messy photo collection? [GroupMachine](https://github.com/mrsilver76/groupmachine) can automatically sort photos and videos into albums.<br/>
->- Manage your photos with Picasa? [StarCasa](https://github.com/mrsilver76/starcasa) outputs a list of your favorite portraits ready for SideBySide.
+>- **Got a messy photo collection?** [GroupMachine](https://github.com/mrsilver76/groupmachine) can automatically sort photos and videos into albums.<br/>
+>- **Manage your photos with Picasa?** [StarCasa](https://github.com/mrsilver76/starcasa) outputs a list of your favorite portraits ready for SideBySide.
 
 ## 🧰 Features
 * 💻 Runs on Windows, Linux (x64 & ARM) and macOS (Intel & Apple Silicon).
 * 📂 Accepts multiple source folders in a single run.
 * 📄 Supports file lists for precise control over included images.
 * 🔎 Recursively scans subfolders when enabled.
-* 🖼️ Combines two portrait `.jpg` (or `.jpeg`) images into one seamless landscape `.jpg`.
-* 🧠 Avoids pairing duplicate or closely timed photos, making the output more interesting.
+* 🖼️ Combines two portrait `.jpg` (or `.jpeg`) images into one landscape `.jpg`.
+* 🧠 Avoids pairing duplicate or closely timed photos, making the display more interesting.
 * ➖ Adds an optional divider to enhance visual separation between images.
 * 🎯 Automatically centers each photo within a black background.
-* 📐 Resizes output (and reduces the file size) to optimally fit digital photo frame displays.
+* 📐 Resizes output to your frame's resolution, which also reduces the file size.
 * 🔐 Creates uniquely named files to prevent duplicates and maintain consistency.
 * 🔀 Supports sorting photos by date taken/created or random order.
 * 🪞 Mirrors output folder by removing stale files no longer in source.
@@ -59,7 +59,7 @@ Each release includes the following files (`x.x.x` denotes the version number):
 
 - Download the appropriate binary for your platform (see table above).
 - Ensure that the extracted `libSkiaSharp.dylib` file remains in the same folder as the binary - this is required for the native SkiaSharp bindings to work.
-- Install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime). Slightly more technical information can be found [here](https://learn.microsoft.com/en-gb/dotnet/core/install/macos).
+- Install the [.NET 10.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0/runtime). Slightly more technical information can be found [here](https://learn.microsoft.com/en-gb/dotnet/core/install/macos).
 - ⚠️ Do not install the SDK, ASP.NET Core Runtime, or Desktop Runtime.
 - Make the downloaded file executable: `chmod +x SideBySide-x.x.x-<your-platform>`
 - Open a terminal in that folder and run the program with your desired arguments.
@@ -75,7 +75,7 @@ Each release includes the following files (`x.x.x` denotes the version number):
 
 - Download the appropriate binary for your platform (see table above).
 - Ensure that the extracted `libSkiaSharp.so` file remains in the same folder as the binary - this is required for the native SkiaSharp bindings to work.
-- Install the [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime). Slightly more technical pages can be found [here](https://learn.microsoft.com/en-gb/dotnet/core/install/linux).
+- Install the [.NET 10.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0/runtime). Slightly more technical pages can be found [here](https://learn.microsoft.com/en-gb/dotnet/core/install/linux).
 - ⚠️ Do not install the SDK, ASP.NET Core Runtime, or Desktop Runtime.
 - Make the downloaded file executable: `chmod +x SideBySide-x.x.x-<your-platform>`
 - Open a terminal in that folder and run the program with your desired arguments.
@@ -99,12 +99,12 @@ SideBySide "~/Pictures/Holiday" --output "~/Pictures/Frame" --dimensions 1080x72
 * Output landscapes images in the `Pictures\Frame` home folder
 * Delete previously generated images in `Pictures\Frame` before starting
 * All landscape images to be 1080 x 720
-* Use no pixel separator (where possible)
+* Use the default 16 pixel separator
 
 ```
 SideBySide "C:\Users\Richard\Pictures\Holiday\Europe" "C:\Users\Richard\Pictures\Holiday\America" -o "C:\Users\Richard\Pictures\Frame" -d 1080x720 -g 10 -r -w
 
-SideBySide "~/Pictures/Holiday/Europe" "~/Pictures/Holiday/America" --ouput "~/Pictures/Frame" --dimensions 1080x720 -gap 10 --recursive --write
+SideBySide "~/Pictures/Holiday/Europe" "~/Pictures/Holiday/America" --output "~/Pictures/Frame" --dimensions 1080x720 --gap 10 --recursive --write
 ```
 * Look for portrait images in the `Pictures\Holiday\Europe` and `Pictures\Holiday\America` home folders (and all sub-folders)
 * Output landscapes images in the `Pictures\Frame` home folder
@@ -129,13 +129,15 @@ Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
 >At least one input directory or the `-f` (`--filelist`) option is required.
 
 - **`-o <output_dir>`, `--output <output_dir>`**   
-  Directory where generated landscape images will be saved. Must already exist.
+  Directory where generated landscape images will be saved. It is created if it does not exist.
+
+  The output folder must not be one of the input folders. SideBySide does not follow symbolic links or Windows junctions.
 
 - **`-d <WxH>`, `--dimensions <WxH>`**   
   Output image dimensions specified as `[width]x[height]` or `[width],[height]` (e.g. `1080x720` or `1080,720`).
 
 >[!TIP]
->For optimal display quality, set the output dimensions to match the native resolution of your digital photo frame. This ensures images are scaled accurately without distortion or unnecessary padding.
+>To avoid additional unnecessary scaling, set the output dimensions to the native resolution of your digital photo frame.
 
 ### Input control
 
@@ -145,7 +147,7 @@ Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
 - **`-f <file>`, `--filelist <file>`**   
   Use a plain text file (`<file>`) to explicitly define which images to process. Each line must contain the full path to a .jpg or .jpeg image. Empty lines and invalid paths will be silently ignored, meaning that messy or autogenerated lists can be used.
 
-  This option is ideal when:
+  This option is useful when:
   - You want full control over exactly which images are processed, regardless of folder structure.
   - You're using a third-party tool like [StarCasa](https://github.com/mrsilver76/starcasa) to generate a `txt` file of starred photos in [Google's Picasa](https://picasa.en.softonic.com/) or similar apps.
   
@@ -155,10 +157,17 @@ Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
 ### Output control
 
 - **`-g <pixels>`, `--gap <pixels>`**   
-  Minimum width in pixels of the black separator between images. If not provided or set to `0` then extra separation will be avoided where possible.
+  Minimum width in pixels of the black separator between images. If not provided then 16 pixels is used. Set to `0` if you would like to avoid a separator wherever possible.
 
 >[!IMPORTANT]
 >Black borders on the left and right may appear depending on the aspect ratio of the original images. The separator width defines the _minimum_ number of pixels placed between the two images. If natural spacing already exceeds this value due to image proportions, no additional separator will be added.
+
+- **`-p <seconds>`, `--proximity <seconds>`**   
+  Try to avoid pairing photos taken fewer than `<seconds>` apart. This works on the assumption that photos taken very closely together (e.g. burst photos) are probably very similar and won't look particularly interesting together on your photo frame. If not provided, `120` (2 minutes) is used. Set to `0` to disable.
+
+>[!NOTE]
+> - If SideBySide moves a photo to avoid a close pairing, it will try to keep it with other photos taken on the same day, but that might not always be possible.
+> - A day is defined as "*6am - 6am*", which means that photos taken at events that go into the early hours of the morning are more likely to stay together.
 
 - **`-w`, `--write`**   
   Overwrite existing output images if they already exist in the destination directory.
@@ -167,9 +176,9 @@ Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
   Clean/remove all generated images from the destination folder before processing begins. Only `.jpg` files with names starting with `sideby-` will be deleted.
 
 - **`-m`, `--mirror`**   
-  Enable mirror mode for the output directory. Any previously generated files (matching `sideby-*.jpg`) in the destination folder that are not recreated or deliberately skipped in the current run will be deleted. This ensures the output folder is an accurate mirror of the current inputs - no outdated or stale composite images will be left behind.
+  Enable mirror mode for the output directory. Any previously generated files (matching `sideby-*.jpg`) in the destination folder that are not recreated or deliberately skipped in the current run will be deleted.
 
-  This is particularly useful when you regularly update or rotate source content, you use file lists (`-f` or `--filelist`) for precise input control and/or you want a clean output folder without accumulating unused files.
+  This is useful when you regularly update or rotate source content, you use file lists (`-f` or `--filelist`) for precise input control and/or you want a clean output folder without accumulating unused files.
 
 >[!NOTE]
 >Mirror mode only affects files generated by this tool (`sideby-*.jpg`). It will not touch other files in the output directory.
@@ -180,7 +189,7 @@ Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
   Shuffle/randomise the order of input images instead of sorting by date taken/created. When enabled, the output images will have their creation and modification timestamps set to the time of processing rather than preserving the originals.
 
 - **`-nc`, `--no-check`**  
-  Disables GitHub version checks for GroupMachine.
+  Disables GitHub version checks for SideBySide.
 
 >[!NOTE]
 >Version checks occur at most once every 7 days. SideBySide connects only to [this URL](https://api.github.com/repos/mrsilver76/sidebyside/releases/latest) to retrieve version information. No data about you or your photo library is shared with the author or GitHub - you can verify this yourself by reviewing `GitHubVersionChecker.cs`
@@ -191,9 +200,9 @@ Usage: SideBySide [<input_dir>...] -o <output_dir> -d <WxH> [options]
 - **`/?`, `-h`, `--help`**  
   Displays the full help text with all available options, credits and the location of the log files.
 
-## 🧾 Output file naming and timestamp behavour
+## 🧾 Output file naming and timestamp behaviour
 
-Each generated file is uniquely named using a short SHA256 hash derived from the full paths of the two source images.
+Each generated file is named using a short SHA256 hash derived from the file names of the two source images (not their folder paths).
 
 For example:
 ```
@@ -201,7 +210,7 @@ sideby-Z9dcF2gqex7o7RGn.jpg
 sideby-gBX41a-GkfcaaBA4.jpg
 sideby-QgVzwyOYxBrFTEjb.jpg
 ```
-The filename is deterministic: given the same pair of input files, the output name will always be the same - regardless of options like separator width or output resolution. This ensures consistency across runs and avoids unnecessary duplication.
+The filename is deterministic: given the same pair of input files, the output name will always be the same - regardless of options like separator width or output resolution. So running it again does not create duplicates.
 
 >[!NOTE]
 >By default, the tool will not overwrite existing files. If you change visual settings and want updated images, use the `--write` flag to force regeneration.
@@ -214,7 +223,7 @@ Please raise an issue at https://github.com/mrsilver76/sidebyside/issues.
 
 ## 💡 Future development: open but unplanned
 
-SideBySide currently meets the needs it was designed for, and no major new features are planned at this time. However, the project remains open to community suggestions and improvements. If you have ideas or see ways to enhance the tool, please feel free to submit a [feature request](https://github.com/mrsilver76/sidebyside/issues).
+SideBySide currently meets the needs it was designed for, and no major new features are planned at this time. However suggestions are welcome as [feature requests](https://github.com/mrsilver76/sidebyside/issues).
 
 ## 📝 Attribution
 - Frame icon created by Freepik - Flaticon (https://www.flaticon.com/free-icons/frame)
@@ -225,31 +234,4 @@ SideBySide currently meets the needs it was designed for, and no major new featu
 
 ## 🕰️ Version history
 
-### 1.2.0 (17 January 2026)
-- Added a time-based check to avoid pairing photos taken within one minute of each other. This reduces the chances of visually similar photos being placed together, while still allowing photos from the same event to pair.
-- Improved the output and grammar of content displayed during processing.
-- Fixed an issue where the resulting images did not have the "Last Modified" date set correctly.
-
-### 1.1.0 (18 October 2025)
-- Added image comparison to prevent identical photos from being paired together.
-- Fixed issue where photos rotated via EXIF data were incorrectly detected as landscape.
-- Improved usage output: commands are now grouped by category and wrap correctly across terminal widths.
-- Logger now includes OS information to help with troubleshooting across platforms.
-- Added GitHub version checking with new `-nc` (`--no-check`) option to disable it.
-- New header displays all key configuration information.
-- Improved logger performance by keeping files open instead of repeatedly opening/closing.
-- Split utility functions into static classes for clearer structure.
-- Resolved all .NET code analysis warnings to standardize style and tidy the codebase.
-- Updated publish Powershell script.
-
-### 1.0.0 (02 August 2025)
-- 🏁 Declared as the first stable release.
-- Added `--mirror` option.
-- Added `--filelist` option.
-- A destination folder will now be created if one doesn't previously exist.
-- Cleaned up `--help` output.
-- Logger now includes OS information to help with troubleshooting across platforms.
-- Cleaned up various pieces of code (analyzer suggestions regarding naming, simplifications, and style)
-
-### 0.9.0 (02 June 2025)
-- Initial version.
+See [CHANGELOG.md](CHANGELOG.md)

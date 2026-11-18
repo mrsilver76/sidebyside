@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2026 Richard Lawrence
+ * Copyright (C) 2024 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,29 +22,29 @@ using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
 using SkiaSharp;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace SideBySide
 {
+    /// <summary>
+    /// Reads image sizes, dates and dimensions from the files, and compares files for equality.
+    /// </summary>
     internal sealed partial class ImageMetadataExtractor
     {
         /// <summary>Regexp for identifying dimensions of a photo</summary>
         [GeneratedRegex(@"^(\d+)[x,](\d+)$")]
         private static partial Regex DimensionRegex();
 
-        /// <summary>Dictionary to cache MD5 hashes of files to avoid redundant calculations.</summary>
+        /// <summary>Dictionary to cache SHA256 hashes of files to avoid redundant calculations.</summary>
         private static readonly Dictionary<string, byte[]> _shaCache = [];
-        /// <summary>Gets the MD5 hash key for the specified file path and length, using a combination of the file path and length</summary>
-        private static string GetCacheKey(string path, long length) =>
-            $"{path}|{length}";
 
         /// <summary>
         /// Extracts the EXIF date taken from the image, falling back to file creation
         /// or modification date if EXIF data is not available or corrupted.
         /// </summary>
-        /// <param name="image"></param>
-        /// <param name="path"></param>
-        /// <returns></returns>
+        /// <param name="path">The image file to read.</param>
+        /// <returns>The date the photo was taken, or the earlier of the file's created and modified times.</returns>
         private static DateTime GetExifDateTaken(string path)
         {
             try
@@ -88,49 +88,87 @@ namespace SideBySide
         {
             Logger.Write("Filtering and selecting valid portrait images...");
 
-            foreach (string file in Globals.ImageFileList)
+            // Show a progress bar based on the bytes of the files scanned. It is not used in verbose mode,
+            // as the log line for each file would collide with it.
+            bool showProgress = !Globals.VerboseMode;
+            long[] fileSizes = new long[Globals.ImageFileList.Count];
+
+            if (showProgress)
             {
-                using var codec = SKCodec.Create(file);
-                if (codec == null)
+                // Scan files in parallel to get the total size for the progress bar
+                Parallel.For(0, fileSizes.Length, i =>
                 {
-                    Logger.Write($"Skipping {file} as it could not be opened.", true);
-                    continue;
-                }
-
-                if (codec.Info.Width == 0 || codec.Info.Height == 0)
-                {
-                    Logger.Write($"Skipping {file} as it is not a valid image file.", true);
-                    continue;
-                }
-
-                // Set width and height variables
-                int width = codec.Info.Width;
-                int height = codec.Info.Height;
-
-                // Correct for EXIF orientation (swap width/height if rotated 90° or 270°)
-                switch (codec.EncodedOrigin)
-                {
-                    case SKEncodedOrigin.RightTop:   // 90° CW
-                    case SKEncodedOrigin.LeftBottom: // 270° CW
-                        (width, height) = (height, width);
-                        break;
-                }
-
-                // Skip images that are not portrait-oriented
-                if (width >= height)
-                    continue;
-
-                // Add the image to the list with its dimensions and creation date
-                Globals.Images.Add(new Globals.ImageInfo
-                {
-                    FullPath = file,
-                    FileName = Path.GetFileName(file),
-                    FileWidth = codec.Info.Width,
-                    FileHeight = codec.Info.Height,
-                    CreationDate = GetExifDateTaken(file)
+                    try
+                    {
+                        fileSizes[i] = new FileInfo(Globals.ImageFileList[i]).Length;
+                    }
+                    catch (Exception)
+                    {
+                        // Size unknown, so go with 0 bytes
+                    }
                 });
 
-                Logger.Write($"Added {file} ({codec.Info.Width}x{codec.Info.Height})", true);
+                ProgressBar.Total = fileSizes.Sum();
+                ProgressBar.Start();
+            }
+
+            try
+            {
+                for (int i = 0; i < Globals.ImageFileList.Count; i++)
+                {
+                    string file = Globals.ImageFileList[i];
+
+                    try
+                    {
+                        using var codec = SKCodec.Create(file);
+                        if (codec == null)
+                        {
+                            Logger.Write($"Skipping {file} as it could not be opened.", true);
+                            continue;
+                        }
+
+                        if (codec.Info.Width == 0 || codec.Info.Height == 0)
+                        {
+                            Logger.Write($"Skipping {file} as it is not a valid image file.", true);
+                            continue;
+                        }
+
+                        // Set width and height variables
+                        int width = codec.Info.Width;
+                        int height = codec.Info.Height;
+
+                        // Correct for EXIF orientation by swapping width and height if rotated 90° or 270° clockwise
+                        if (codec.EncodedOrigin == SKEncodedOrigin.RightTop || codec.EncodedOrigin == SKEncodedOrigin.LeftBottom)
+                            (width, height) = (height, width);
+
+                        // Skip images that are not portrait-oriented
+                        if (width >= height)
+                            continue;
+
+                        // Add the image to the list with its dimensions and creation date
+                        Globals.Images.Add(new Globals.ImageInfo
+                        {
+                            FullPath = file,
+                            FileName = Path.GetFileName(file),
+                            FileWidth = codec.Info.Width,
+                            FileHeight = codec.Info.Height,
+                            CreationDate = GetExifDateTaken(file)
+                        });
+
+                        Logger.Write($"Added {file} ({codec.Info.Width}x{codec.Info.Height})", true);
+                    }
+                    finally
+                    {
+                        // Count the file as done however it was handled
+                        if (showProgress)
+                            ProgressBar.Add(fileSizes[i]);
+                    }
+                }
+            }
+            finally
+            {
+                // Clear the bar and restore the cursor, even if something threw
+                ProgressBar.Stop();
             }
 
             Logger.Write($"Found {GrammarHelper.Pluralise(Globals.Images.Count, "suitable portrait image", "suitable portrait images")}.");
@@ -138,17 +176,20 @@ namespace SideBySide
 
         /// <summary>
         /// Given a string in the format "[width]x[height]" or "[width],[height], extracts the width and height values
-        /// and assigns them to the frameWidth and frameHeight variables. Returns true if successful, false otherwise.
+        /// and sets Globals.FrameWidth and Globals.FrameHeight. Returns true if successful, false otherwise.
         /// </summary>
-        /// <param name="dimensions"></param>
-        /// <returns></returns>
+        /// <param name="dimensions">The text to parse, for example "1080x720".</param>
+        /// <returns>True if the text was valid, in which case the frame size has been set.</returns>
         public static bool ExtractDimensions(string dimensions)
         {
-            var match = DimensionRegex().Match(dimensions.Trim().ToLower(CultureInfo.CurrentCulture));
+            var match = DimensionRegex().Match(dimensions.Trim().ToLower(CultureInfo.InvariantCulture));
             if (!match.Success)
                 return false;
 
-            if (!int.TryParse(match.Groups[1].Value, out int width) || !int.TryParse(match.Groups[2].Value, out int height))
+            bool hasWidth = int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int width);
+            bool hasHeight = int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int height);
+
+            if (!hasWidth || !hasHeight)
                 return false;
 
             // Width and height values are valid, so set them
@@ -161,14 +202,14 @@ namespace SideBySide
         /// Given two file paths, compares the files to determine if they are identical. Uses
         /// file size and SHA256 hash for comparison.
         /// </summary>
-        /// <param name="path1"></param>
-        /// <param name="path2"></param>
-        /// <returns></returns>
+        /// <param name="path1">The first file.</param>
+        /// <param name="path2">The second file.</param>
+        /// <returns>True if both files exist and have the same contents.</returns>
         public static bool FilesAreEqual(string path1, string path2)
         {
             try
             {
-                // Quick checks first — fast and cheap
+                // Quick checks first, as they are cheap
                 var info1 = new FileInfo(path1);
                 var info2 = new FileInfo(path2);
 
@@ -201,15 +242,16 @@ namespace SideBySide
         /// the hash has already been computed for this file (based on its path and length), the cached
         /// value is returned instead to improve performance.
         /// </summary>
-        /// <param name="info"></param>
-        /// <returns></returns>
+        /// <param name="info">The file to hash.</param>
+        /// <returns>The SHA256 hash of the file's contents.</returns>
         private static byte[] GetSHAHash(FileInfo info)
         {
-            string key = GetCacheKey(info.FullName, info.Length);
+            string key = $"{info.FullName}|{info.Length}";
 
             if (_shaCache.TryGetValue(key, out var cached))
                 return cached;
-            using var sha = System.Security.Cryptography.SHA256.Create();
+
+            using var sha = SHA256.Create();
             using var stream = info.OpenRead();
             byte[] hash = sha.ComputeHash(stream);
 

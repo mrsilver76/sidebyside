@@ -1,7 +1,7 @@
 ﻿/*
  * SideBySide - Combine two portrait photos into a single landscape image,
  * useful for digital photo frames that display vertical images awkwardly.
- * Copyright (C) 2024-2026 Richard Lawrence
+ * Copyright (C) 2024 Richard Lawrence
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,25 +26,25 @@ namespace SideBySide
     internal sealed class OutputFileCleaner
     {
         /// <summary>
-        /// Deletes existing files in the destination folder if the deleteExisting flag is set to true.
+        /// Deletes the previously generated files in the destination folder when --clean was given.
         /// </summary>
         public static void DeleteExistingFiles()
         {
             // Don't delete existing files if the flag is not set
-            if (Globals.DeleteExisting == false)
+            if (!Globals.DeleteExisting)
                 return;
 
             // Delete existing files in the destination folder
             Logger.Write($"Cleaning existing files in: {Globals.DestinationFolder}");
 
-            if (!System.IO.Directory.Exists(Globals.DestinationFolder))
+            if (!Directory.Exists(Globals.DestinationFolder))
             {
                 Logger.Write($"Destination folder does not exist: {Globals.DestinationFolder}", true);
                 return;
             }
 
             // Get all files matching the pattern "sideby-*.jpg" in the destination folder
-            string[] existingFiles = System.IO.Directory.GetFiles(Globals.DestinationFolder, "sideby-*.jpg", SearchOption.TopDirectoryOnly);
+            string[] existingFiles = Directory.GetFiles(Globals.DestinationFolder, "sideby-*.jpg", SearchOption.TopDirectoryOnly);
             if (existingFiles.Length == 0)
             {
                 Logger.Write($"No existing files to delete in: {Globals.DestinationFolder}", true);
@@ -79,24 +79,26 @@ namespace SideBySide
 
             // Walk through the destination folder and delete any files that were not processed
             // in this run.
-            var existing = System.IO.Directory.GetFiles(Globals.DestinationFolder, "sideby-*.jpg", SearchOption.TopDirectoryOnly);
+            var existing = Directory.GetFiles(Globals.DestinationFolder, "sideby-*.jpg", SearchOption.TopDirectoryOnly);
             foreach (var file in existing)
             {
-                var name = Path.GetFileName(file);
-                if (!Globals.ProcessedFiles.Contains(file))
+                if (Globals.ProcessedFiles.Contains(file))
+                    continue;
+
+                string name = Path.GetFileName(file);
+                Logger.Write($"Mirror mode: deleting stale file: {name}", true);
+
+                try
                 {
-                    Logger.Write($"Mirror mode: deleting stale file: {name}", true);
-                    try
-                    {
-                        File.Delete(file);
-                        deleted++;
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Write($"Failed to delete stale file {name}: {ex.Message}", true);
-                    }
+                    File.Delete(file);
+                    deleted++;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Write($"Failed to delete stale file {name}: {ex.Message}", true);
                 }
             }
+
             if (deleted > 0)
                 Logger.Write($"Mirror mode: deleted {GrammarHelper.Pluralise(deleted, "stale file", "stale files")} from destination folder.");
         }
